@@ -1,0 +1,16 @@
+{
+  "name": "coffee-pos",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm --filter @coffee-pos/web build",
+    "dev": "pnpm --filter @coffee-pos/web dev",
+    "start": "pnpm --filter @coffee-pos/web start",
+    "typecheck": "pnpm --filter @coffee-pos/web typecheck",
+    "db:generate": "pnpm --filter @coffee-pos/web db:generate"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

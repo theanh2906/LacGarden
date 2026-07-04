@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+.vercel
+.env
+.env.local
+*.log
+coverage
+.DS_Store
+apps/web/dist
+apps/web/.next
+screenshots
+apps/api/dist
+apps/api/prisma/migrations/dev.db
+backups

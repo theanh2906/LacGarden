@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+  CASHIER
+  BARISTA
+  VIEWER
+}
+
+enum OrderType {
+  TAKEAWAY
+  DINE_IN
+  DELIVERY
+}
+
+enum OrderStatus {
+  DRAFT
+  SENT
+  PREPARING
+  READY
+  SERVED
+  CLOSED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum OrderItemStatus {
+  NEW
+  SENT
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  QR
+  CARD
+  OTHER
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  CONFIRMED
+  VOIDED
+  REFUNDED
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  displayName String    @map("display_name")
+  pinHash     String    @map("pin_hash")
+  role        UserRole
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  orders      Order[]
+  payments    Payment[]
+  openedShifts Shift[]  @relation("ShiftOpenedBy")
+  closedShifts Shift[]  @relation("ShiftClosedBy")
+
+  @@map("users")
+}
+
+model MenuCategory {
+  id        String     @id @default(uuid())
+  name      String
+  sortOrder Int        @default(0) @map("sort_order")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  items     MenuItem[]
+
+  @@index([isActive, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String            @id @default(uuid())
+  categoryId  String            @map("category_id")
+  name        String
+  description String?
+  basePrice   Int               @map("base_price")
+  isActive    Boolean           @default(true) @map("is_active")
+  sortOrder   Int               @default(0) @map("sort_order")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  category    MenuCategory      @relation(fields: [categoryId], references: [id])
+  variants    MenuItemVariant[]
+  orderItems  OrderItem[]
+
+  @@index([categoryId, isActive, sortOrder])
+  @@map("menu_items")
+}
+
+model MenuItemVariant {
+  id        String      @id @default(uuid())
+  itemId    String      @map("item_id")
+  name      String
+  price     Int
+  sortOrder Int         @default(0) @map("sort_order")
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  item      MenuItem    @relation(fields: [itemId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([itemId, isActive, sortOrder])
+  @@map("menu_item_variants")
+}
+
+model Shift {
+  id             String      @id @default(uuid())
+  status         ShiftStatus @default(OPEN)
+  openedById     String      @map("opened_by_id")
+  closedById     String?     @map("closed_by_id")
+  openedAt       DateTime    @default(now()) @map("opened_at")
+  closedAt       DateTime?   @map("closed_at")
+  openingCash    Int         @default(0) @map("opening_cash")
+  expectedCash   Int         @default(0) @map("expected_cash")
+  actualCash     Int?        @map("actual_cash")
+  cashDifference Int?        @map("cash_difference")
+  note           String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  openedBy       User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
+  closedBy       User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
+  orders         Order[]
+  payments       Payment[]
+
+  @@index([status, openedAt])
+  @@map("shifts")
+}
+
+model Order {
+  id            String        @id @default(uuid())
+  orderNo       String        @unique @map("order_no")
+  orderType     OrderType     @map("order_type")
+  shiftId       String?       @map("shift_id")
+  status        OrderStatus   @default(DRAFT)
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  subtotal      Int           @default(0)
+  discountTotal Int           @default(0) @map("discount_total")
+  total         Int           @default(0)
+  note          String?
+  createdById   String        @map("created_by_id")
+  sentAt        DateTime?     @map("sent_at")
+  paidAt        DateTime?     @map("paid_at")
+  closedAt      DateTime?     @map("closed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  shift         Shift?        @relation(fields: [shiftId], references: [id])
+  createdBy     User          @relation(fields: [createdById], references: [id])
+  items         OrderItem[]
+  payments      Payment[]
+
+  @@index([createdAt])
+  @@index([status, paymentStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String          @id @default(uuid())
+  orderId             String          @map("order_id")
+  menuItemId          String?         @map("menu_item_id")
+  variantId           String?         @map("variant_id")
+  itemNameSnapshot    String          @map("item_name_snapshot")
+  variantNameSnapshot String?         @map("variant_name_snapshot")
+  unitPriceSnapshot   Int             @map("unit_price_snapshot")
+  quantity            Int
+  lineTotal           Int             @map("line_total")
+  status              OrderItemStatus @default(NEW)
+  note                String?
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  order               Order           @relation(fields: [orderId], references: [id])
+  menuItem            MenuItem?       @relation(fields: [menuItemId], references: [id])
+  variant             MenuItemVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id             String              @id @default(uuid())
+  orderId        String              @map("order_id")
+  shiftId        String?             @map("shift_id")
+  method         PaymentMethod
+  status         PaymentRecordStatus @default(CONFIRMED)
+  amount         Int
+  receivedAmount Int?                @map("received_amount")
+  changeAmount   Int                 @default(0) @map("change_amount")
+  note           String?
+  confirmedById  String              @map("confirmed_by_id")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  order          Order               @relation(fields: [orderId], references: [id])
+  shift          Shift?              @relation(fields: [shiftId], references: [id])
+  confirmedBy    User                @relation(fields: [confirmedById], references: [id])
+
+  @@index([createdAt])
+  @@index([method, status])
+  @@map("payments")
+}
