@@ -5,10 +5,12 @@ dist
 .env
 .env.local
 *.log
+*.tsbuildinfo
 coverage
 .DS_Store
 apps/web/dist
 apps/web/.next
+apps/web/demo-*.png
 screenshots
 apps/api/dist
 apps/api/prisma/migrations/dev.db
