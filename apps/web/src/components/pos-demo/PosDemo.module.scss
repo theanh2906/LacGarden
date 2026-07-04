@@ -410,7 +410,8 @@
 
 .tone_iced,
 .tone_coldbrew,
-.tone_soda {
+.tone_soda,
+.tone_fruittea {
   background:
     radial-gradient(circle at 50% 44%, rgba(255, 255, 255, 0.9) 0 18%, transparent 19%),
     linear-gradient(135deg, #e8eadb 0%, #fff8ea 100%);
@@ -434,9 +435,20 @@
   background: linear-gradient(135deg, #fff1dc 0%, #fffaf3 100%);
 }
 
+.tone_cacao {
+  background: linear-gradient(135deg, #ead7c5 0%, #fff8ea 100%);
+
+  .cup::before {
+    background:
+      radial-gradient(circle at 48% 46%, #fff3df 0 10%, transparent 11%),
+      radial-gradient(circle at 50% 50%, #8a5130 0 56%, #d7a06e 57% 72%, #4b2818 73%);
+  }
+}
+
 .tone_yogurt,
 .tone_frappe,
-.tone_croissant {
+.tone_croissant,
+.tone_bread {
   background: linear-gradient(135deg, #f1d5bd 0%, #fff8ea 100%);
 
   .cup {

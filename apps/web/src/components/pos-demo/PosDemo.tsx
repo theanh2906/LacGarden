@@ -46,20 +46,20 @@ export function PosDemo({ initialView = "POS" }: { initialView?: DemoView }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [orderType, setOrderType] = useState<OrderType>("TAKEAWAY");
-  const defaultLatte = menuItems.find((item) => item.id === "latte") ?? menuItems[0];
-  const defaultSoda = menuItems.find((item) => item.id === "lychee-rose-soda") ?? menuItems[1];
+  const defaultCoffee = menuItems.find((item) => item.id === "ca-phe-sua") ?? menuItems[0];
+  const defaultTea = menuItems.find((item) => item.id === "peach-artichoke-tea") ?? menuItems[1];
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
-      cartId: "demo-latte",
-      item: defaultLatte,
-      variant: defaultLatte.variants[0],
+      cartId: "demo-coffee",
+      item: defaultCoffee,
+      variant: defaultCoffee.variants[0],
       quantity: 1,
-      modifiers: ["Sữa yến mạch", "Thêm shot"]
+      modifiers: ["50% đường", "Thêm shot"]
     },
     {
-      cartId: "demo-soda",
-      item: defaultSoda,
-      variant: defaultSoda.variants[0],
+      cartId: "demo-tea",
+      item: defaultTea,
+      variant: defaultTea.variants[0],
       quantity: 1,
       modifiers: ["Ít đá"]
     }
@@ -514,8 +514,9 @@ function BaristaStrip() {
 
 function defaultModifiers(item: MenuItem) {
   if (item.categoryId === "coffee") return ["50% đường"];
-  if (item.categoryId === "soda" || item.categoryId === "frappe") return ["Ít đá"];
-  if (item.categoryId === "matcha" || item.categoryId === "yogurt") return ["70% đường"];
+  if (item.categoryId === "soda" || item.categoryId === "fruit-tea") return ["Ít đá"];
+  if (item.categoryId === "matcha" || item.categoryId === "yogurt" || item.categoryId === "milk-tea") return ["70% đường"];
+  if (item.categoryId === "bread") return ["Làm nóng"];
   return ["Mặc định"];
 }
 
