@@ -15,3 +15,5 @@ screenshots
 apps/api/dist
 apps/api/prisma/migrations/dev.db
 backups
+
+.vercel
