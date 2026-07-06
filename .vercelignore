@@ -1,0 +1,10 @@
+.env
+.env.local
+.env.*.local
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.*.local
+apps/web/storage
+storage
+screenshots
+*.log
