@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "prisma generate --schema prisma/schema.prisma",
     "build": "next build",
     "dev": "next dev -H 0.0.0.0",
     "start": "next start -H 0.0.0.0",
