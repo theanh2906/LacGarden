@@ -47,6 +47,7 @@
   color: rgba(255, 255, 255, 0.74);
   font-size: 12px;
   font-weight: 700;
+  text-decoration: none;
 
   &:hover,
   &.activeNav {
@@ -146,6 +147,20 @@
   border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
+}
+
+.spinnerIcon {
+  animation: spin 850ms linear infinite;
+}
+
+.inlineLoading {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  svg {
+    animation: spin 850ms linear infinite;
+  }
 }
 
 .profile {
@@ -264,20 +279,34 @@
 .productCard {
   position: relative;
   overflow: hidden;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 16px 16px 10px 10px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 40%),
     var(--surface);
   box-shadow: 0 1px 0 rgba(82, 52, 30, 0.05);
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 
-  &::after {
-    position: absolute;
-    right: 12px;
-    bottom: 54px;
-    left: 12px;
-    border-bottom: 1px dashed rgba(122, 107, 88, 0.34);
-    content: "";
+  &:hover,
+  &:focus-visible {
+    border-color: var(--line-strong);
+    box-shadow: 0 10px 24px rgba(82, 52, 30, 0.12);
+    outline: 0;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.72;
+    transform: none;
   }
 }
 
@@ -287,7 +316,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px 10px;
   align-content: start;
-  padding: 12px 12px 8px;
+  padding: 12px;
 
   > div {
     min-width: 0;
@@ -314,30 +343,6 @@
     color: var(--espresso);
     white-space: nowrap;
     font-size: 13px;
-  }
-}
-
-.variantRow {
-  display: flex;
-  gap: 6px;
-  padding: 0 12px 14px;
-
-  button {
-    min-width: 38px;
-    min-height: 34px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: #fff6e6;
-    color: var(--teal-strong);
-    font-weight: 800;
-    position: relative;
-    z-index: 1;
-
-    &:hover {
-      border-color: var(--teal);
-      background: var(--teal);
-      color: white;
-    }
   }
 }
 
@@ -528,6 +533,11 @@
     background: linear-gradient(180deg, #a35a30, #7b3f22);
     color: white;
   }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
 }
 
 .cartList {
@@ -610,6 +620,11 @@
     border-right: 1px solid var(--line);
     border-left: 1px solid var(--line);
   }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
 }
 
 .addItemButton {
@@ -677,6 +692,11 @@
     gap: 8px;
     border-radius: 8px;
     font-weight: 900;
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.76;
   }
 }
 
@@ -781,7 +801,7 @@
   }
 }
 
-.mockPage {
+.pagePane {
   display: grid;
   gap: 16px;
 }
@@ -914,6 +934,44 @@
     align-self: center;
     color: var(--teal);
   }
+}
+
+.queueActions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+
+  button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--teal);
+    border-radius: 8px;
+    background: var(--teal);
+    color: white;
+    padding: 0 14px;
+    font-weight: 900;
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.emptyText {
+  margin: 0;
+  padding: 18px;
+  color: var(--muted);
 }
 
 .metricGrid {

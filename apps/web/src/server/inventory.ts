@@ -369,8 +369,8 @@ function mapInventoryStockMovement(movement: InventoryStockMovementWithItem): In
     quantityBefore: movement.quantityBefore.toNumber(),
     quantityAfter: movement.quantityAfter.toNumber(),
     purchaseDate: movement.purchaseDate?.toISOString() ?? null,
-    unitCostVnd: movement.unitCostVnd,
-    totalCostVnd: movement.totalCostVnd,
+    unitCostVnd: toNullableNumber(movement.unitCostVnd),
+    totalCostVnd: toNullableNumber(movement.totalCostVnd),
     note: movement.note,
     createdAt: movement.createdAt.toISOString()
   };
@@ -386,6 +386,7 @@ function getInventoryAlertState({
   lowStockThreshold: number;
 }): InventoryAlertState {
   if (!isActive) return "INACTIVE";
+  if (lowStockThreshold <= 0) return "OK";
   if (currentQuantity <= 0) return "OUT_OF_STOCK";
   if (currentQuantity <= lowStockThreshold) return "LOW_STOCK";
   return "OK";
@@ -402,4 +403,9 @@ function matchesStatusFilter(item: InventoryItemDto, status: InventoryStatusFilt
 
 function toDecimal(value: number) {
   return new Prisma.Decimal(value.toString());
+}
+
+function toNullableNumber(value: bigint | number | null) {
+  if (value === null) return null;
+  return typeof value === "bigint" ? Number(value) : value;
 }

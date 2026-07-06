@@ -1,18 +1,16 @@
 # TODO
 
-## Demo Polish
+## Product Polish
 
 - [ ] Review all responsive layouts on tablet and mobile POS viewports.
 - [ ] Capture updated screenshots for POS, Orders, Queue, Reports, Inventory, and Settings.
-- [ ] Add empty, loading, and error states for demo API-backed sections.
-- [ ] Prepare a short manager demo script covering ordering, queue, and payment flow.
 
 ## Payment QR
 
 - [ ] Add a payment method selector in checkout: cash, card, bank transfer QR.
 - [ ] Generate a dynamic VietQR/payOS QR for each order with amount and order code.
 - [ ] Add a payment modal showing QR code, amount, order code, and expiry state.
-- [ ] Add manual confirmation for the first demo-ready version.
+- [ ] Add manual bank-transfer confirmation before webhook automation is available.
 - [ ] Integrate payOS create-payment-link API after backend credentials are available.
 - [ ] Add payOS webhook handler to auto-mark orders as paid.
 - [ ] Verify webhook signatures before updating payment status.
@@ -24,7 +22,6 @@
 
 ## Product Costing
 
-- [ ] Add ingredient and packaging item management.
 - [ ] Add recipe/BOM setup for each menu item.
 - [ ] Calculate product cost from ingredient quantity, unit cost, and packaging cost.
 - [ ] Track gross margin per item based on selling price and calculated cost.
@@ -54,15 +51,12 @@
 
 ## Backend Integration
 
-- [ ] Replace mock menu data with Prisma-backed services.
-- [ ] Replace mock order data with persisted orders and order items.
 - [ ] Add staff auth/session handling.
-- [ ] Add kitchen/bar ticket status transitions.
 - [ ] Add receipt and bar-ticket printable views.
 
 ## Operations
 
-- [ ] Configure production environment variables on Vercel.
+- [ ] Verify Vercel production environment includes `DATABASE_URL`, `GEMINI_API_KEY`, and `GEMINI_MODEL`.
 - [ ] Add database migration workflow.
 - [ ] Add basic smoke tests for key POS flows.
-- [ ] Add deployment notes for demo and production environments.
+- [ ] Add deployment notes for staging and production environments.

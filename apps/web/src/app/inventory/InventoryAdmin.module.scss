@@ -53,6 +53,10 @@
   font-weight: 800;
 }
 
+.spinnerIcon {
+  animation: spin 850ms linear infinite;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -412,6 +416,11 @@
     background: #f4dfc9;
   }
 
+  &:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
   strong,
   small {
     display: block;
@@ -506,7 +515,14 @@
 
 .primaryButton:disabled,
 .secondaryButton:disabled {
+  cursor: wait;
   opacity: 0.6;
+}
+
+.formSubmitButton {
+  width: fit-content;
+  margin-top: 14px;
+  padding-inline: 18px;
 }
 
 .actionRow {
@@ -582,6 +598,12 @@
   margin: 0;
   padding: 16px;
   color: #75634f;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1180px) {

@@ -13,12 +13,16 @@ enum UserRole {
   CASHIER
   BARISTA
   VIEWER
+
+  @@map("user_role")
 }
 
 enum OrderType {
   TAKEAWAY
   DINE_IN
   DELIVERY
+
+  @@map("order_type")
 }
 
 enum OrderStatus {
@@ -29,6 +33,8 @@ enum OrderStatus {
   SERVED
   CLOSED
   CANCELLED
+
+  @@map("order_status")
 }
 
 enum PaymentStatus {
@@ -36,6 +42,8 @@ enum PaymentStatus {
   PARTIAL
   PAID
   REFUNDED
+
+  @@map("payment_status")
 }
 
 enum OrderItemStatus {
@@ -45,6 +53,8 @@ enum OrderItemStatus {
   READY
   SERVED
   CANCELLED
+
+  @@map("order_item_status")
 }
 
 enum PaymentMethod {
@@ -53,6 +63,8 @@ enum PaymentMethod {
   QR
   CARD
   OTHER
+
+  @@map("payment_method")
 }
 
 enum PaymentRecordStatus {
@@ -60,11 +72,15 @@ enum PaymentRecordStatus {
   CONFIRMED
   VOIDED
   REFUNDED
+
+  @@map("payment_record_status")
 }
 
 enum ShiftStatus {
   OPEN
   CLOSED
+
+  @@map("shift_status")
 }
 
 enum InventoryStockMovementType {
@@ -72,11 +88,15 @@ enum InventoryStockMovementType {
   ADJUSTMENT
   WASTE
   CORRECTION
+
+  @@map("inventory_stock_movement_type")
 }
 
 enum InventoryUploadType {
   INVOICE
   IMPORT
+
+  @@map("inventory_upload_type")
 }
 
 enum InventoryUploadStatus {
@@ -84,6 +104,8 @@ enum InventoryUploadStatus {
   PARSED
   ATTACHED
   FAILED
+
+  @@map("inventory_upload_status")
 }
 
 enum InventoryImportBatchStatus {
@@ -91,18 +113,24 @@ enum InventoryImportBatchStatus {
   PARSED
   CONFIRMED
   FAILED
+
+  @@map("inventory_import_batch_status")
 }
 
 enum InventoryImportSourceType {
   TXT
   EXCEL
   UNKNOWN
+
+  @@map("inventory_import_source_type")
 }
 
 enum InventoryImportParserUsed {
   DETERMINISTIC
   GEMINI
   MIXED
+
+  @@map("inventory_import_parser_used")
 }
 
 enum InventoryImportRowStatus {
@@ -111,327 +139,351 @@ enum InventoryImportRowStatus {
   WARNING
   CONFIRMED
   SKIPPED
+
+  @@map("inventory_import_row_status")
 }
 
 model User {
-  id          String    @id @default(uuid())
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username    String    @unique
   displayName String    @map("display_name")
   pinHash     String    @map("pin_hash")
   role        UserRole
   isActive    Boolean   @default(true) @map("is_active")
-  lastLoginAt DateTime? @map("last_login_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  orders      Order[]
-  payments    Payment[]
-  openedShifts Shift[]  @relation("ShiftOpenedBy")
-  closedShifts Shift[]  @relation("ShiftClosedBy")
+  orders                  Order[]
+  payments                Payment[]
+  openedShifts            Shift[]                  @relation("ShiftOpenedBy")
+  closedShifts            Shift[]                  @relation("ShiftClosedBy")
   inventoryStockMovements InventoryStockMovement[]
-  inventoryUploads InventoryUpload[]
-  inventoryImportBatches InventoryImportBatch[]
+  inventoryUploads        InventoryUpload[]
+  inventoryImportBatches  InventoryImportBatch[]
 
   @@map("users")
 }
 
 model MenuCategory {
-  id        String     @id @default(uuid())
+  id        String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  slug      String     @unique(map: "menu_categories_slug_uidx")
   name      String
   sortOrder Int        @default(0) @map("sort_order")
   isActive  Boolean    @default(true) @map("is_active")
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
   items     MenuItem[]
 
-  @@index([isActive, sortOrder])
+  @@index([isActive, sortOrder], map: "menu_categories_isActive_sortOrder_idx")
   @@map("menu_categories")
 }
 
 model MenuItem {
-  id          String            @id @default(uuid())
-  categoryId  String            @map("category_id")
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  slug        String   @unique(map: "menu_items_slug_uidx")
   name        String
   description String?
-  basePrice   Int               @map("base_price")
-  isActive    Boolean           @default(true) @map("is_active")
-  sortOrder   Int               @default(0) @map("sort_order")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  basePrice   BigInt   @map("base_price")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category    MenuCategory      @relation(fields: [categoryId], references: [id])
-  variants    MenuItemVariant[]
-  orderItems  OrderItem[]
+  category   MenuCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variants   MenuItemVariant[]
+  orderItems OrderItem[]
 
-  @@index([categoryId, isActive, sortOrder])
+  @@index([categoryId], map: "menu_items_categoryId_idx")
+  @@index([categoryId, isActive, sortOrder], map: "menu_items_categoryId_isActive_sortOrder_idx")
   @@map("menu_items")
 }
 
 model MenuItemVariant {
-  id        String      @id @default(uuid())
-  itemId    String      @map("item_id")
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  slug      String   @unique(map: "menu_item_variants_slug_uidx")
   name      String
-  price     Int
-  sortOrder Int         @default(0) @map("sort_order")
-  isActive  Boolean     @default(true) @map("is_active")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  price     BigInt
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  item      MenuItem    @relation(fields: [itemId], references: [id])
+  item       MenuItem    @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   orderItems OrderItem[]
 
-  @@index([itemId, isActive, sortOrder])
+  @@index([itemId], map: "menu_item_variants_itemId_idx")
+  @@index([itemId, isActive, sortOrder], map: "menu_item_variants_itemId_isActive_sortOrder_idx")
   @@map("menu_item_variants")
 }
 
 model Shift {
-  id             String      @id @default(uuid())
+  id             String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   status         ShiftStatus @default(OPEN)
-  openedById     String      @map("opened_by_id")
-  closedById     String?     @map("closed_by_id")
-  openedAt       DateTime    @default(now()) @map("opened_at")
-  closedAt       DateTime?   @map("closed_at")
-  openingCash    Int         @default(0) @map("opening_cash")
-  expectedCash   Int         @default(0) @map("expected_cash")
-  actualCash     Int?        @map("actual_cash")
-  cashDifference Int?        @map("cash_difference")
+  openedById     String      @map("opened_by_id") @db.Uuid
+  closedById     String?     @map("closed_by_id") @db.Uuid
+  openedAt       DateTime    @default(now()) @map("opened_at") @db.Timestamptz(6)
+  closedAt       DateTime?   @map("closed_at") @db.Timestamptz(6)
+  openingCash    BigInt      @default(0) @map("opening_cash")
+  expectedCash   BigInt      @default(0) @map("expected_cash")
+  actualCash     BigInt?     @map("actual_cash")
+  cashDifference BigInt?     @map("cash_difference")
   note           String?
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  openedBy       User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
-  closedBy       User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
-  orders         Order[]
-  payments       Payment[]
+  openedBy User      @relation("ShiftOpenedBy", fields: [openedById], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  closedBy User?     @relation("ShiftClosedBy", fields: [closedById], references: [id], onUpdate: NoAction)
+  orders   Order[]
+  payments Payment[]
 
-  @@index([status, openedAt])
+  @@index([closedById], map: "shifts_closedById_idx")
+  @@index([openedById], map: "shifts_openedById_idx")
+  @@index([status, openedAt], map: "shifts_status_openedAt_idx")
   @@map("shifts")
 }
 
 model Order {
-  id            String        @id @default(uuid())
+  id            String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   orderNo       String        @unique @map("order_no")
   orderType     OrderType     @map("order_type")
-  shiftId       String?       @map("shift_id")
+  shiftId       String?       @map("shift_id") @db.Uuid
   status        OrderStatus   @default(DRAFT)
   paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
-  subtotal      Int           @default(0)
-  discountTotal Int           @default(0) @map("discount_total")
-  total         Int           @default(0)
+  subtotal      BigInt        @default(0)
+  discountTotal BigInt        @default(0) @map("discount_total")
+  total         BigInt        @default(0)
   note          String?
-  createdById   String        @map("created_by_id")
-  sentAt        DateTime?     @map("sent_at")
-  paidAt        DateTime?     @map("paid_at")
-  closedAt      DateTime?     @map("closed_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  createdById   String        @map("created_by_id") @db.Uuid
+  sentAt        DateTime?     @map("sent_at") @db.Timestamptz(6)
+  paidAt        DateTime?     @map("paid_at") @db.Timestamptz(6)
+  closedAt      DateTime?     @map("closed_at") @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  shift         Shift?        @relation(fields: [shiftId], references: [id])
-  createdBy     User          @relation(fields: [createdById], references: [id])
-  items         OrderItem[]
-  payments      Payment[]
+  shift     Shift?      @relation(fields: [shiftId], references: [id], onUpdate: NoAction)
+  createdBy User        @relation(fields: [createdById], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  items     OrderItem[]
+  payments  Payment[]
 
-  @@index([createdAt])
-  @@index([status, paymentStatus])
+  @@index([createdAt], map: "orders_createdAt_idx")
+  @@index([createdById], map: "orders_createdById_idx")
+  @@index([shiftId], map: "orders_shiftId_idx")
+  @@index([status, paymentStatus], map: "orders_status_paymentStatus_idx")
   @@map("orders")
 }
 
 model OrderItem {
-  id                  String          @id @default(uuid())
-  orderId             String          @map("order_id")
-  menuItemId          String?         @map("menu_item_id")
-  variantId           String?         @map("variant_id")
+  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId             String          @map("order_id") @db.Uuid
+  menuItemId          String?         @map("menu_item_id") @db.Uuid
+  variantId           String?         @map("variant_id") @db.Uuid
   itemNameSnapshot    String          @map("item_name_snapshot")
   variantNameSnapshot String?         @map("variant_name_snapshot")
-  unitPriceSnapshot   Int             @map("unit_price_snapshot")
+  unitPriceSnapshot   BigInt          @map("unit_price_snapshot")
   quantity            Int
-  lineTotal           Int             @map("line_total")
+  lineTotal           BigInt          @map("line_total")
   status              OrderItemStatus @default(NEW)
   note                String?
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order               Order           @relation(fields: [orderId], references: [id])
-  menuItem            MenuItem?       @relation(fields: [menuItemId], references: [id])
-  variant             MenuItemVariant? @relation(fields: [variantId], references: [id])
+  order    Order            @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  menuItem MenuItem?        @relation(fields: [menuItemId], references: [id], onUpdate: NoAction)
+  variant  MenuItemVariant? @relation(fields: [variantId], references: [id], onUpdate: NoAction)
 
-  @@index([orderId])
+  @@index([menuItemId], map: "order_items_menuItemId_idx")
+  @@index([orderId], map: "order_items_orderId_idx")
+  @@index([variantId], map: "order_items_variantId_idx")
   @@map("order_items")
 }
 
 model Payment {
-  id             String              @id @default(uuid())
-  orderId        String              @map("order_id")
-  shiftId        String?             @map("shift_id")
+  id             String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId        String              @map("order_id") @db.Uuid
+  shiftId        String?             @map("shift_id") @db.Uuid
   method         PaymentMethod
   status         PaymentRecordStatus @default(CONFIRMED)
-  amount         Int
-  receivedAmount Int?                @map("received_amount")
-  changeAmount   Int                 @default(0) @map("change_amount")
+  amount         BigInt
+  receivedAmount BigInt?             @map("received_amount")
+  changeAmount   BigInt              @default(0) @map("change_amount")
   note           String?
-  confirmedById  String              @map("confirmed_by_id")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
+  confirmedById  String              @map("confirmed_by_id") @db.Uuid
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order          Order               @relation(fields: [orderId], references: [id])
-  shift          Shift?              @relation(fields: [shiftId], references: [id])
-  confirmedBy    User                @relation(fields: [confirmedById], references: [id])
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  shift       Shift? @relation(fields: [shiftId], references: [id], onUpdate: NoAction)
+  confirmedBy User   @relation(fields: [confirmedById], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([createdAt])
+  @@index([confirmedById], map: "payments_confirmedById_idx")
+  @@index([createdAt], map: "payments_createdAt_idx")
   @@index([method, status])
+  @@index([orderId], map: "payments_orderId_idx")
+  @@index([shiftId], map: "payments_shiftId_idx")
   @@map("payments")
 }
 
 model InventoryItem {
-  id                String                   @id @default(uuid())
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name              String
-  code              String?                  @unique
+  code              String?  @unique(map: "inventory_items_code_uidx")
   unit              String
-  currentQuantity   Decimal                  @default(0) @map("current_quantity") @db.Decimal(12, 3)
-  lowStockThreshold Decimal                  @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
-  isActive          Boolean                  @default(true) @map("is_active")
+  currentQuantity   Decimal  @default(0) @map("current_quantity") @db.Decimal(12, 3)
+  lowStockThreshold Decimal  @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
+  isActive          Boolean  @default(true) @map("is_active")
   note              String?
-  createdAt         DateTime                 @default(now()) @map("created_at")
-  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  stockMovements    InventoryStockMovement[]
-  purchaseRecords   InventoryPurchaseRecord[]
-  importRows        InventoryImportRow[]
+  stockMovements  InventoryStockMovement[]
+  purchaseRecords InventoryPurchaseRecord[]
+  importRows      InventoryImportRow[]
 
-  @@index([isActive, name])
-  @@index([currentQuantity])
+  @@index([isActive, name], map: "inventory_items_isActive_name_idx")
+  @@index([currentQuantity], map: "inventory_items_currentQuantity_idx")
   @@index([unit])
   @@map("inventory_items")
 }
 
 model InventoryStockMovement {
-  id              String                     @id @default(uuid())
-  inventoryItemId String                     @map("inventory_item_id")
+  id              String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inventoryItemId String                     @map("inventory_item_id") @db.Uuid
   movementType    InventoryStockMovementType @map("movement_type")
   quantityDelta   Decimal                    @map("quantity_delta") @db.Decimal(12, 3)
   quantityBefore  Decimal                    @map("quantity_before") @db.Decimal(12, 3)
   quantityAfter   Decimal                    @map("quantity_after") @db.Decimal(12, 3)
-  purchaseDate    DateTime?                  @map("purchase_date")
-  unitCostVnd     Int?                       @map("unit_cost_vnd")
-  totalCostVnd    Int?                       @map("total_cost_vnd")
+  purchaseDate    DateTime?                  @map("purchase_date") @db.Timestamptz(6)
+  unitCostVnd     BigInt?                    @map("unit_cost_vnd")
+  totalCostVnd    BigInt?                    @map("total_cost_vnd")
   note            String?
-  createdById     String?                    @map("created_by_id")
-  createdAt       DateTime                   @default(now()) @map("created_at")
+  createdById     String?                    @map("created_by_id") @db.Uuid
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  inventoryItem   InventoryItem              @relation(fields: [inventoryItemId], references: [id])
-  createdBy       User?                      @relation(fields: [createdById], references: [id])
-  purchaseRecord  InventoryPurchaseRecord?
+  inventoryItem      InventoryItem                @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdBy          User?                        @relation(fields: [createdById], references: [id], onUpdate: NoAction)
+  purchaseRecord     InventoryPurchaseRecord?
   invoiceAttachments InventoryInvoiceAttachment[]
 
-  @@index([inventoryItemId, createdAt])
-  @@index([movementType, createdAt])
-  @@index([purchaseDate])
+  @@index([createdById], map: "inventory_stock_movements_createdById_idx")
+  @@index([inventoryItemId], map: "inventory_stock_movements_inventoryItemId_idx")
+  @@index([inventoryItemId, createdAt], map: "inventory_stock_movements_inventoryItemId_createdAt_idx")
+  @@index([movementType, createdAt], map: "inventory_stock_movements_movementType_createdAt_idx")
+  @@index([purchaseDate], map: "inventory_stock_movements_purchaseDate_idx")
   @@map("inventory_stock_movements")
 }
 
 model InventoryPurchaseRecord {
-  id              String                 @id @default(uuid())
-  inventoryItemId String                 @map("inventory_item_id")
-  stockMovementId String                 @unique @map("stock_movement_id")
-  purchaseDate    DateTime               @map("purchase_date")
-  unitCostVnd     Int?                   @map("unit_cost_vnd")
-  totalCostVnd    Int?                   @map("total_cost_vnd")
-  supplierName    String?                @map("supplier_name")
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inventoryItemId String   @map("inventory_item_id") @db.Uuid
+  stockMovementId String   @unique(map: "inventory_purchase_records_stockMovementId_uidx") @map("stock_movement_id") @db.Uuid
+  purchaseDate    DateTime @map("purchase_date") @db.Timestamptz(6)
+  unitCostVnd     BigInt?  @map("unit_cost_vnd")
+  totalCostVnd    BigInt?  @map("total_cost_vnd")
+  supplierName    String?  @map("supplier_name")
   note            String?
-  createdAt       DateTime               @default(now()) @map("created_at")
-  updatedAt       DateTime               @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  inventoryItem   InventoryItem          @relation(fields: [inventoryItemId], references: [id])
-  stockMovement   InventoryStockMovement @relation(fields: [stockMovementId], references: [id])
+  inventoryItem      InventoryItem                @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stockMovement      InventoryStockMovement       @relation(fields: [stockMovementId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   invoiceAttachments InventoryInvoiceAttachment[]
 
-  @@index([inventoryItemId, purchaseDate])
-  @@index([purchaseDate])
+  @@index([inventoryItemId], map: "inventory_purchase_records_inventoryItemId_idx")
+  @@index([inventoryItemId, purchaseDate], map: "inventory_purchase_records_inventoryItemId_purchaseDate_idx")
+  @@index([purchaseDate], map: "inventory_purchase_records_purchaseDate_idx")
+  @@index([stockMovementId], map: "inventory_purchase_records_stockMovementId_idx")
   @@map("inventory_purchase_records")
 }
 
 model InventoryUpload {
-  id               String                  @id @default(uuid())
-  originalFileName String                  @map("original_file_name")
-  storedFilePath   String                  @map("stored_file_path")
-  mimeType         String                  @map("mime_type")
-  fileSize         Int                     @map("file_size")
-  uploadType       InventoryUploadType     @map("upload_type")
-  status           InventoryUploadStatus   @default(STORED)
-  uploadedById     String?                 @map("uploaded_by_id")
-  createdAt        DateTime                @default(now()) @map("created_at")
+  id               String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  originalFileName String                @map("original_file_name")
+  storedFilePath   String                @map("stored_file_path")
+  mimeType         String                @map("mime_type")
+  fileSize         Int                   @map("file_size")
+  uploadType       InventoryUploadType   @map("upload_type")
+  status           InventoryUploadStatus @default(STORED)
+  uploadedById     String?               @map("uploaded_by_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  uploadedBy       User?                   @relation(fields: [uploadedById], references: [id])
-  importBatch      InventoryImportBatch?
+  uploadedBy         User?                        @relation(fields: [uploadedById], references: [id], onUpdate: NoAction)
+  importBatch        InventoryImportBatch?
   invoiceAttachments InventoryInvoiceAttachment[]
 
-  @@index([uploadType, createdAt])
-  @@index([status, createdAt])
+  @@index([status, createdAt], map: "inventory_uploads_status_createdAt_idx")
+  @@index([uploadType, createdAt], map: "inventory_uploads_uploadType_createdAt_idx")
+  @@index([uploadedById], map: "inventory_uploads_uploadedById_idx")
   @@map("inventory_uploads")
 }
 
 model InventoryImportBatch {
-  id              String                    @id @default(uuid())
-  uploadId        String                    @unique @map("upload_id")
+  id              String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  uploadId        String                     @unique(map: "inventory_import_batches_uploadId_uidx") @map("upload_id") @db.Uuid
   status          InventoryImportBatchStatus @default(DRAFT)
-  sourceType      InventoryImportSourceType @map("source_type")
-  parserUsed      InventoryImportParserUsed @map("parser_used")
-  rowCount        Int                       @default(0) @map("row_count")
-  validRowCount   Int                       @default(0) @map("valid_row_count")
-  invalidRowCount Int                       @default(0) @map("invalid_row_count")
-  createdById     String?                   @map("created_by_id")
-  createdAt       DateTime                  @default(now()) @map("created_at")
-  confirmedAt     DateTime?                 @map("confirmed_at")
+  sourceType      InventoryImportSourceType  @map("source_type")
+  parserUsed      InventoryImportParserUsed  @map("parser_used")
+  rowCount        Int                        @default(0) @map("row_count")
+  validRowCount   Int                        @default(0) @map("valid_row_count")
+  invalidRowCount Int                        @default(0) @map("invalid_row_count")
+  createdById     String?                    @map("created_by_id") @db.Uuid
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  confirmedAt     DateTime?                  @map("confirmed_at") @db.Timestamptz(6)
 
-  upload          InventoryUpload           @relation(fields: [uploadId], references: [id])
-  createdBy       User?                     @relation(fields: [createdById], references: [id])
-  rows            InventoryImportRow[]
+  upload    InventoryUpload      @relation(fields: [uploadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdBy User?                @relation(fields: [createdById], references: [id], onUpdate: NoAction)
+  rows      InventoryImportRow[]
 
-  @@index([status, createdAt])
-  @@index([sourceType, createdAt])
+  @@index([createdById], map: "inventory_import_batches_createdById_idx")
+  @@index([sourceType, createdAt], map: "inventory_import_batches_sourceType_createdAt_idx")
+  @@index([status, createdAt], map: "inventory_import_batches_status_createdAt_idx")
+  @@index([uploadId], map: "inventory_import_batches_uploadId_idx")
   @@map("inventory_import_batches")
 }
 
 model InventoryImportRow {
-  id                     String                   @id @default(uuid())
-  batchId                String                   @map("batch_id")
+  id                     String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  batchId                String                   @map("batch_id") @db.Uuid
   rowIndex               Int                      @map("row_index")
   rawText                String?                  @map("raw_text")
   parsedJson             Json                     @map("parsed_json")
   normalizedName         String                   @map("normalized_name")
   unit                   String?
   quantity               Decimal?                 @db.Decimal(12, 3)
-  unitCostVnd            Int?                     @map("unit_cost_vnd")
-  totalCostVnd           Int?                     @map("total_cost_vnd")
-  purchaseDate           DateTime?                @map("purchase_date")
+  unitCostVnd            BigInt?                  @map("unit_cost_vnd")
+  totalCostVnd           BigInt?                  @map("total_cost_vnd")
+  purchaseDate           DateTime?                @map("purchase_date") @db.Timestamptz(6)
   validationStatus       InventoryImportRowStatus @map("validation_status")
   validationErrors       Json                     @map("validation_errors")
-  matchedInventoryItemId String?                  @map("matched_inventory_item_id")
-  createdAt              DateTime                 @default(now()) @map("created_at")
+  matchedInventoryItemId String?                  @map("matched_inventory_item_id") @db.Uuid
+  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  batch                  InventoryImportBatch     @relation(fields: [batchId], references: [id])
-  matchedInventoryItem   InventoryItem?           @relation(fields: [matchedInventoryItemId], references: [id])
+  batch                InventoryImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  matchedInventoryItem InventoryItem?       @relation(fields: [matchedInventoryItemId], references: [id], onUpdate: NoAction)
 
-  @@unique([batchId, rowIndex])
-  @@index([batchId, validationStatus])
-  @@index([matchedInventoryItemId])
+  @@unique([batchId, rowIndex], map: "inventory_import_rows_batchId_rowIndex_uidx")
+  @@index([batchId], map: "inventory_import_rows_batchId_idx")
+  @@index([batchId, validationStatus], map: "inventory_import_rows_batchId_validationStatus_idx")
+  @@index([matchedInventoryItemId], map: "inventory_import_rows_matchedInventoryItemId_idx")
   @@map("inventory_import_rows")
 }
 
 model InventoryInvoiceAttachment {
-  id               String                   @id @default(uuid())
-  uploadId         String                   @map("upload_id")
-  stockMovementId  String?                  @map("stock_movement_id")
-  purchaseRecordId String?                  @map("purchase_record_id")
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  uploadId         String   @map("upload_id") @db.Uuid
+  stockMovementId  String?  @map("stock_movement_id") @db.Uuid
+  purchaseRecordId String?  @map("purchase_record_id") @db.Uuid
   note             String?
-  createdAt        DateTime                 @default(now()) @map("created_at")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  upload           InventoryUpload          @relation(fields: [uploadId], references: [id])
-  stockMovement    InventoryStockMovement?  @relation(fields: [stockMovementId], references: [id])
-  purchaseRecord   InventoryPurchaseRecord? @relation(fields: [purchaseRecordId], references: [id])
+  upload         InventoryUpload          @relation(fields: [uploadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stockMovement  InventoryStockMovement?  @relation(fields: [stockMovementId], references: [id], onUpdate: NoAction)
+  purchaseRecord InventoryPurchaseRecord? @relation(fields: [purchaseRecordId], references: [id], onUpdate: NoAction)
 
-  @@index([uploadId])
-  @@index([stockMovementId])
-  @@index([purchaseRecordId])
+  @@index([purchaseRecordId], map: "inventory_invoice_attachments_purchaseRecordId_idx")
+  @@index([stockMovementId], map: "inventory_invoice_attachments_stockMovementId_idx")
+  @@index([uploadId], map: "inventory_invoice_attachments_uploadId_idx")
   @@map("inventory_invoice_attachments")
 }

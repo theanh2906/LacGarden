@@ -7,6 +7,8 @@ import {
   ClipboardList,
   FileText,
   History,
+  Home,
+  Loader2,
   Package,
   Plus,
   RefreshCw,
@@ -52,6 +54,18 @@ type MovementFormState = {
   note: string;
 };
 
+type InventoryOperation =
+  | "refresh"
+  | "select"
+  | "createItem"
+  | "updateItem"
+  | "toggleItem"
+  | "createMovement"
+  | "parseImport"
+  | "saveImport"
+  | "confirmImport"
+  | "uploadInvoice";
+
 const statusFilters: Array<{ value: InventoryStatusFilter; label: string }> = [
   { value: "all", label: "Tất cả" },
   { value: "active", label: "Đang dùng" },
@@ -66,6 +80,19 @@ const movementTypes: Array<{ value: InventoryStockMovementType; label: string }>
   { value: "WASTE", label: "Hao hụt" },
   { value: "CORRECTION", label: "Kiểm kho" }
 ];
+
+const operationLabels: Record<InventoryOperation, string> = {
+  refresh: "Đang làm mới dữ liệu kho...",
+  select: "Đang tải lịch sử nguyên liệu...",
+  createItem: "Đang lưu nguyên liệu...",
+  updateItem: "Đang cập nhật nguyên liệu...",
+  toggleItem: "Đang đổi trạng thái nguyên liệu...",
+  createMovement: "Đang ghi biến động kho...",
+  parseImport: "Đang upload và parse file...",
+  saveImport: "Đang lưu chỉnh sửa import...",
+  confirmImport: "Đang confirm import...",
+  uploadInvoice: "Đang upload hóa đơn..."
+};
 
 const defaultItemForm: ItemFormState = {
   name: "",
@@ -100,13 +127,15 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
   const [editForm, setEditForm] = useState<ItemFormState>(() => toItemForm(initialSnapshot.items[0]));
   const [movementForm, setMovementForm] = useState(defaultMovementForm);
   const [notice, setNotice] = useState("Inventory foundation is ready for admin data entry.");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingOperation, setPendingOperation] = useState<InventoryOperation | null>(null);
   const [importBatch, setImportBatch] = useState<InventoryImportBatchDto | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [invoiceMovementId, setInvoiceMovementId] = useState("");
 
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? items[0] ?? null;
+  const isSubmitting = pendingOperation !== null;
+  const loadingMessage = pendingOperation ? operationLabels[pendingOperation] : null;
   const summary = useMemo(() => calculateSummary(items), [items]);
   const purchaseMovements = useMemo(() => {
     const movementById = new Map<string, InventoryStockMovementDto>();
@@ -128,6 +157,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     setSelectedItemId(item.id);
     setEditForm(toItemForm(item));
     setNotice(`Đang xem lịch sử kho của ${item.name}`);
+    setPendingOperation("select");
     try {
       const response = await fetch(`/api/inventory/items/${item.id}/movements`);
       const payload = (await response.json()) as { data?: InventoryStockMovementDto[]; error?: { message: string } };
@@ -135,19 +165,27 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
       setSelectedMovements(payload.data ?? []);
     } catch (error) {
       logInventoryAdminError("Failed to load stock movement history", error);
+    } finally {
+      setPendingOperation(null);
     }
   }
 
-  async function refreshItems(status: InventoryStatusFilter = statusFilter) {
-    const response = await fetch(`/api/inventory/items?status=${status}`);
-    const payload = (await response.json()) as { data?: InventoryItemDto[]; error?: { message: string } };
-    if (!response.ok) throw new Error(payload.error?.message ?? "Không tải được danh sách kho.");
-    setItems(payload.data ?? []);
+  async function refreshItems(status: InventoryStatusFilter = statusFilter, showLoading = false) {
+    if (showLoading) setPendingOperation("refresh");
+    try {
+      const response = await fetch(`/api/inventory/items?status=${status}`);
+      const payload = (await response.json()) as { data?: InventoryItemDto[]; error?: { message: string } };
+      if (!response.ok) throw new Error(payload.error?.message ?? "Không tải được danh sách kho.");
+      setItems(payload.data ?? []);
+      if (showLoading) setNotice("Đã làm mới danh sách kho.");
+    } finally {
+      if (showLoading) setPendingOperation(null);
+    }
   }
 
   async function createItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSubmitting(true);
+    setPendingOperation("createItem");
     try {
       const response = await fetch("/api/inventory/items", {
         method: "POST",
@@ -171,14 +209,14 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to create inventory item", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function updateSelectedItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedItem) return;
-    setIsSubmitting(true);
+    setPendingOperation("updateItem");
     try {
       const response = await fetch(`/api/inventory/items/${selectedItem.id}`, {
         method: "PATCH",
@@ -199,13 +237,13 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to update inventory item", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function toggleSelectedItem() {
     if (!selectedItem) return;
-    setIsSubmitting(true);
+    setPendingOperation("toggleItem");
     try {
       const response = await fetch(`/api/inventory/items/${selectedItem.id}`, {
         method: "PATCH",
@@ -220,14 +258,14 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to toggle inventory item", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function createMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedItem) return;
-    setIsSubmitting(true);
+    setPendingOperation("createMovement");
     try {
       const payloadBody = buildMovementPayload(selectedItem.id, movementForm);
       const response = await fetch("/api/inventory/movements", {
@@ -249,14 +287,14 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to create stock movement", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function uploadAndParseImport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!importFile) return;
-    setIsSubmitting(true);
+    setPendingOperation("parseImport");
     try {
       const formData = new FormData();
       formData.set("file", importFile);
@@ -274,13 +312,13 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to upload and parse inventory import", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function saveImportCorrections() {
     if (!importBatch) return;
-    setIsSubmitting(true);
+    setPendingOperation("saveImport");
     try {
       const response = await fetch(`/api/inventory/imports/${importBatch.id}/rows`, {
         method: "PATCH",
@@ -305,13 +343,13 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to save import corrections", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function confirmImport() {
     if (!importBatch) return;
-    setIsSubmitting(true);
+    setPendingOperation("confirmImport");
     try {
       const response = await fetch(`/api/inventory/imports/${importBatch.id}/confirm`, {
         method: "POST",
@@ -326,14 +364,14 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to confirm import", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
   async function uploadInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!invoiceFile) return;
-    setIsSubmitting(true);
+    setPendingOperation("uploadInvoice");
     try {
       const formData = new FormData();
       formData.set("file", invoiceFile);
@@ -361,7 +399,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
     } catch (error) {
       logInventoryAdminError("Failed to upload invoice", error);
     } finally {
-      setIsSubmitting(false);
+      setPendingOperation(null);
     }
   }
 
@@ -385,18 +423,21 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
           <p>Desktop admin cho nguyên liệu, tồn kho và lịch sử nhập/xuất.</p>
         </div>
         <div className={styles.headerActions}>
+          <a className={styles.secondaryButton} href="/">
+            <Home size={17} /> Home
+          </a>
           <a className={styles.secondaryButton} href="/inventory/reports">
             <BarChart3 size={17} /> Reports
           </a>
-          <button className={styles.secondaryButton} type="button" onClick={() => refreshItems().catch((error) => logInventoryAdminError("Failed to refresh inventory items", error))} disabled={isSubmitting}>
-            <RefreshCw size={17} /> Làm mới
+          <button className={styles.secondaryButton} type="button" onClick={() => refreshItems(statusFilter, true).catch((error) => logInventoryAdminError("Failed to refresh inventory items", error))} disabled={isSubmitting}>
+            <ButtonContent loading={pendingOperation === "refresh"} icon={<RefreshCw size={17} />} label="Làm mới" loadingLabel="Đang tải..." />
           </button>
         </div>
       </header>
 
       <section className={styles.notice} role="status">
-        <Package size={18} />
-        <span>{notice}</span>
+        {loadingMessage ? <Loader2 className={styles.spinnerIcon} size={18} /> : <Package size={18} />}
+        <span>{loadingMessage ?? notice}</span>
       </section>
 
       <section className={styles.metrics} aria-label="Tổng quan kho">
@@ -428,10 +469,11 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               id={importFileInputId}
               type="file"
               accept=".txt,.csv,.xlsx,.xls"
+              disabled={isSubmitting}
               onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
             />
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !importFile}>
-              Parse file
+              <ButtonContent loading={pendingOperation === "parseImport"} label="Parse file" loadingLabel="Đang parse..." />
             </button>
           </div>
           <small className={styles.helperText}>
@@ -459,9 +501,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               className={styles.hiddenFileInput}
               id={invoiceFileInputId}
               type="file"
+              disabled={isSubmitting}
               onChange={(event) => setInvoiceFile(event.target.files?.[0] ?? null)}
             />
-            <select className={styles.uploadSelect} value={invoiceMovementId} onChange={(event) => setInvoiceMovementId(event.target.value)}>
+            <select className={styles.uploadSelect} value={invoiceMovementId} onChange={(event) => setInvoiceMovementId(event.target.value)} disabled={isSubmitting}>
               <option value="">Chỉ lưu file</option>
               {purchaseMovements.map((movement) => (
                 <option key={movement.id} value={movement.id}>
@@ -470,7 +513,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               ))}
             </select>
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !invoiceFile}>
-              Upload
+              <ButtonContent loading={pendingOperation === "uploadInvoice"} label="Upload" loadingLabel="Đang upload..." />
             </button>
           </div>
           <small className={styles.helperText}>File hóa đơn lưu trên filesystem local và metadata giữ trong database để reconciliation.</small>
@@ -491,7 +534,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
             </div>
             <div className={styles.actionRow}>
               <button className={styles.secondaryButton} type="button" onClick={saveImportCorrections} disabled={isSubmitting}>
-                Lưu chỉnh sửa
+                <ButtonContent loading={pendingOperation === "saveImport"} label="Lưu chỉnh sửa" loadingLabel="Đang lưu..." />
               </button>
               <button
                 className={styles.primaryButton}
@@ -499,7 +542,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 onClick={confirmImport}
                 disabled={isSubmitting || importBatch.invalidRowCount > 0 || importBatch.status === "CONFIRMED"}
               >
-                Confirm import
+                <ButtonContent loading={pendingOperation === "confirmImport"} label="Confirm import" loadingLabel="Đang confirm..." />
               </button>
             </div>
           </div>
@@ -589,6 +632,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 className={`${styles.tableRow} ${selectedItem?.id === item.id ? styles.selectedRow : ""}`}
                 key={item.id}
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => selectItem(item)}
               >
                 <span>
@@ -643,7 +687,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               </Field>
             </div>
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
-              <Save size={17} /> Lưu nguyên liệu
+              <ButtonContent loading={pendingOperation === "createItem"} icon={<Save size={17} />} label="Lưu nguyên liệu" loadingLabel="Đang lưu..." />
             </button>
           </form>
         </div>
@@ -686,10 +730,14 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                   </div>
                   <div className={styles.actionRow}>
                     <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
-                      <Save size={17} /> Cập nhật
+                      <ButtonContent loading={pendingOperation === "updateItem"} icon={<Save size={17} />} label="Cập nhật" loadingLabel="Đang cập nhật..." />
                     </button>
                     <button className={styles.secondaryButton} type="button" onClick={toggleSelectedItem} disabled={isSubmitting}>
-                      {selectedItem.isActive ? "Ngưng dùng" : "Kích hoạt"}
+                      <ButtonContent
+                        loading={pendingOperation === "toggleItem"}
+                        label={selectedItem.isActive ? "Ngưng dùng" : "Kích hoạt"}
+                        loadingLabel="Đang đổi..."
+                      />
                     </button>
                   </div>
                 </form>
@@ -783,8 +831,8 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                       <input value={movementForm.note} onChange={(event) => setMovementForm({ ...movementForm, note: event.target.value })} />
                     </Field>
                   </div>
-                  <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !selectedItem.isActive}>
-                    <Plus size={17} /> Ghi movement
+                  <button className={`${styles.primaryButton} ${styles.formSubmitButton}`} type="submit" disabled={isSubmitting || !selectedItem.isActive}>
+                    <ButtonContent loading={pendingOperation === "createMovement"} icon={<Plus size={17} />} label="Ghi movement" loadingLabel="Đang ghi..." />
                   </button>
                 </form>
               </section>
@@ -825,6 +873,25 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function ButtonContent({
+  loading,
+  icon,
+  label,
+  loadingLabel
+}: {
+  loading: boolean;
+  icon?: ReactNode;
+  label: string;
+  loadingLabel: string;
+}) {
+  return (
+    <>
+      {loading ? <Loader2 className={styles.spinnerIcon} size={17} /> : icon}
+      {loading ? loadingLabel : label}
+    </>
   );
 }
 

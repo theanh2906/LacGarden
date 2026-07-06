@@ -1,23 +1,31 @@
 # Coffee POS
 
-Local-first coffee shop POS demo, now structured as a fullstack Next.js app.
+Fullstack Next.js coffee shop POS for Lac Garden, backed by PostgreSQL through Prisma.
 
 ## Current Shape
 
 - `apps/web`: Next.js App Router, TypeScript, SCSS.
-- `src/app`: pages and mock API route handlers.
-- `src/components`: interactive POS demo UI.
-- `src/data`: mock menu, bar queue, and orders.
-- `src/server/db.ts`: lazy Prisma client getter for later backend integration.
-- `apps/web/prisma/schema.prisma`: database schema foundation for the real POS backend.
+- `src/app`: POS pages and API route handlers.
+- `src/components/pos`: interactive POS UI.
+- `src/server`: lazy Prisma-backed business services for POS and inventory.
+- `apps/web/prisma/schema.prisma`: PostgreSQL schema mapped to the live SQL Connect / Cloud SQL database.
 
-The UI currently runs fully on mock data so product/demo review is not blocked by database or auth integration.
+The POS, inventory, order queue, and reports read and write real database data.
 
 ## Local Development
 
+Create `apps/web/.env` with a PostgreSQL connection string:
+
 ```bash
-cp .env.example .env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?schema=public&sslmode=require"
+```
+
+Then run:
+
+```bash
 pnpm install
+pnpm --filter @coffee-pos/web db:generate
+pnpm --filter @coffee-pos/web db:seed
 pnpm dev
 ```
 
@@ -27,13 +35,23 @@ Open:
 http://localhost:3000
 ```
 
-Mock API endpoints:
+## API Endpoints
 
 ```txt
-GET  /api/demo/menu
-GET  /api/demo/orders
-POST /api/demo/orders
-GET  /api/demo/bar
+GET   /api/menu
+GET   /api/orders
+POST  /api/orders
+POST  /api/orders/checkout
+POST  /api/orders/:id/payments
+PATCH /api/orders/:id/status
+GET   /api/bar
+GET   /api/reports/sales
+```
+
+Inventory endpoints live under:
+
+```txt
+/api/inventory/*
 ```
 
 ## Docker
@@ -43,25 +61,9 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open:
-
-```txt
-http://localhost:3000
-```
-
-PostgreSQL is included in Compose for future backend work, but the current demo UI does not require it.
-
 ## Implementation Notes
 
-- Frontend is demo-first and intentionally uses local state plus mock data.
 - Money is represented as integer VND.
-- Backend integration should replace `src/data/mock-pos.ts` and `/api/demo/*` route handlers incrementally.
-- Database/service clients should be initialized lazily inside server helpers, not at module scope.
-
-## Suggested Next Tasks
-
-1. Add real auth/session route handlers.
-2. Replace mock menu/orders with Prisma-backed services.
-3. Add menu management screens.
-4. Add receipt/bar-ticket printable views.
-5. Add reports screen with mock data, then DB aggregation.
+- Database and service clients are initialized lazily inside server helpers.
+- Until auth/PIN login exists, order and payment writes use the seeded `system-cashier` user.
+- The seed command is idempotent for the starter menu, system user, and inventory items.

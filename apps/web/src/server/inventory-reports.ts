@@ -144,7 +144,7 @@ export async function getInventoryReport(input: Partial<InventoryReportQueryInpu
       lowStockItems: lowStockItems.length,
       outOfStockItems: outOfStockItems.length,
       staleStockItems: staleStockItems.length,
-      totalPurchaseCostVnd: sum(periodMovements.filter((movement) => movement.movementType === "PURCHASE"), (movement) => movement.totalCostVnd ?? 0),
+      totalPurchaseCostVnd: sum(periodMovements.filter((movement) => movement.movementType === "PURCHASE"), (movement) => toMoneyNumber(movement.totalCostVnd)),
       purchaseMovementCount: periodMovements.filter((movement) => movement.movementType === "PURCHASE").length,
       wasteMovementCount: periodMovements.filter((movement) => movement.movementType === "WASTE").length,
       adjustmentMovementCount: periodMovements.filter((movement) => movement.movementType === "ADJUSTMENT").length,
@@ -306,7 +306,7 @@ function buildBuckets(period: InventoryReportPeriodDto, movements: InventoryRepo
     if (!bucket) continue;
     bucket.movementCount += 1;
     bucket.netQuantityDelta += movement.quantityDelta.toNumber();
-    bucket.totalCostVnd += movement.totalCostVnd ?? 0;
+    bucket.totalCostVnd += toMoneyNumber(movement.totalCostVnd);
   }
 
   return buckets;
@@ -329,7 +329,7 @@ function buildMovementTypeBreakdown(movements: InventoryReportMovement[]): Inven
     if (!summary) continue;
     summary.movementCount += 1;
     summary.totalQuantityAbs += Math.abs(movement.quantityDelta.toNumber());
-    summary.totalCostVnd += movement.totalCostVnd ?? 0;
+    summary.totalCostVnd += toMoneyNumber(movement.totalCostVnd);
   }
 
   return Array.from(summaryByType.values());
@@ -372,7 +372,7 @@ function buildTopChangedIngredients(movements: InventoryReportMovement[]) {
     current.totalQuantityChanged += Math.abs(quantityDelta);
     if (movement.movementType === "PURCHASE") current.purchaseQuantity += Math.abs(quantityDelta);
     if (movement.movementType === "WASTE") current.wasteQuantity += Math.abs(quantityDelta);
-    current.totalCostVnd += movement.totalCostVnd ?? 0;
+    current.totalCostVnd += toMoneyNumber(movement.totalCostVnd);
     current.movementCount += 1;
     byItem.set(movement.inventoryItemId, current);
   }
@@ -418,8 +418,8 @@ function mapMovement(movement: InventoryReportMovement): InventoryStockMovementD
     quantityBefore: movement.quantityBefore.toNumber(),
     quantityAfter: movement.quantityAfter.toNumber(),
     purchaseDate: movement.purchaseDate?.toISOString() ?? null,
-    unitCostVnd: movement.unitCostVnd,
-    totalCostVnd: movement.totalCostVnd,
+    unitCostVnd: toNullableMoneyNumber(movement.unitCostVnd),
+    totalCostVnd: toNullableMoneyNumber(movement.totalCostVnd),
     note: movement.note,
     createdAt: movement.createdAt.toISOString()
   };
@@ -473,6 +473,7 @@ function getAlertState({
   lowStockThreshold: number;
 }): InventoryAlertState {
   if (!isActive) return "INACTIVE";
+  if (lowStockThreshold <= 0) return "OK";
   if (currentQuantity <= 0) return "OUT_OF_STOCK";
   if (currentQuantity <= lowStockThreshold) return "LOW_STOCK";
   return "OK";
@@ -501,4 +502,14 @@ function formatDateLabel(date: Date) {
 
 function sum<T>(items: T[], getValue: (item: T) => number) {
   return items.reduce((total, item) => total + getValue(item), 0);
+}
+
+function toMoneyNumber(value: bigint | number | null) {
+  if (value === null) return 0;
+  return typeof value === "bigint" ? Number(value) : value;
+}
+
+function toNullableMoneyNumber(value: bigint | number | null) {
+  if (value === null) return null;
+  return toMoneyNumber(value);
 }

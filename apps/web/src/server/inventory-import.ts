@@ -360,7 +360,7 @@ export async function confirmImportBatch(batchId: string, input: ConfirmImportIn
         const quantityBefore = item.currentQuantity;
         const quantityDelta = row.quantity;
         const quantityAfter = quantityBefore.plus(quantityDelta);
-        const totalCostVnd = row.totalCostVnd ?? calculateTotalCost(row.unitCostVnd ?? undefined, quantityDelta);
+        const totalCostVnd = row.totalCostVnd ?? calculateTotalCost(row.unitCostVnd, quantityDelta);
 
         const movement = await tx.inventoryStockMovement.create({
           data: {
@@ -724,8 +724,8 @@ function mapImportRow(row: InventoryImportBatchWithRows["rows"][number]): Invent
     normalizedName: row.normalizedName,
     unit: row.unit,
     quantity: row.quantity?.toNumber() ?? null,
-    unitCostVnd: row.unitCostVnd,
-    totalCostVnd: row.totalCostVnd,
+    unitCostVnd: toNullableNumber(row.unitCostVnd),
+    totalCostVnd: toNullableNumber(row.totalCostVnd),
     purchaseDate: row.purchaseDate?.toISOString() ?? null,
     validationStatus: row.validationStatus,
     validationErrors: Array.isArray(row.validationErrors) ? (row.validationErrors as string[]) : [],
@@ -779,9 +779,18 @@ function toDecimal(value: number) {
   return new Prisma.Decimal(value.toString());
 }
 
-function calculateTotalCost(unitCostVnd: number | undefined, quantityDelta: Prisma.Decimal) {
-  if (unitCostVnd === undefined) return null;
-  return Math.round(unitCostVnd * quantityDelta.abs().toNumber());
+function calculateTotalCost(unitCostVnd: bigint | number | null, quantityDelta: Prisma.Decimal) {
+  if (unitCostVnd === null) return null;
+  return BigInt(Math.round(toNumber(unitCostVnd) * quantityDelta.abs().toNumber()));
+}
+
+function toNullableNumber(value: bigint | number | null) {
+  if (value === null) return null;
+  return toNumber(value);
+}
+
+function toNumber(value: bigint | number) {
+  return typeof value === "bigint" ? Number(value) : value;
 }
 
 function normalizeKey(value: string) {
