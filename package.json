@@ -8,7 +8,8 @@
     "dev": "pnpm --filter @coffee-pos/web dev",
     "start": "pnpm --filter @coffee-pos/web start",
     "typecheck": "pnpm --filter @coffee-pos/web typecheck",
-    "db:generate": "pnpm --filter @coffee-pos/web db:generate"
+    "db:generate": "pnpm --filter @coffee-pos/web db:generate",
+    "db:seed": "pnpm --filter @coffee-pos/web db:seed"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

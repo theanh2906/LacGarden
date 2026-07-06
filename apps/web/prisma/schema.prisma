@@ -67,6 +67,52 @@ enum ShiftStatus {
   CLOSED
 }
 
+enum InventoryStockMovementType {
+  PURCHASE
+  ADJUSTMENT
+  WASTE
+  CORRECTION
+}
+
+enum InventoryUploadType {
+  INVOICE
+  IMPORT
+}
+
+enum InventoryUploadStatus {
+  STORED
+  PARSED
+  ATTACHED
+  FAILED
+}
+
+enum InventoryImportBatchStatus {
+  DRAFT
+  PARSED
+  CONFIRMED
+  FAILED
+}
+
+enum InventoryImportSourceType {
+  TXT
+  EXCEL
+  UNKNOWN
+}
+
+enum InventoryImportParserUsed {
+  DETERMINISTIC
+  GEMINI
+  MIXED
+}
+
+enum InventoryImportRowStatus {
+  VALID
+  INVALID
+  WARNING
+  CONFIRMED
+  SKIPPED
+}
+
 model User {
   id          String    @id @default(uuid())
   username    String    @unique
@@ -82,6 +128,9 @@ model User {
   payments    Payment[]
   openedShifts Shift[]  @relation("ShiftOpenedBy")
   closedShifts Shift[]  @relation("ShiftClosedBy")
+  inventoryStockMovements InventoryStockMovement[]
+  inventoryUploads InventoryUpload[]
+  inventoryImportBatches InventoryImportBatch[]
 
   @@map("users")
 }
@@ -231,4 +280,158 @@ model Payment {
   @@index([createdAt])
   @@index([method, status])
   @@map("payments")
+}
+
+model InventoryItem {
+  id                String                   @id @default(uuid())
+  name              String
+  code              String?                  @unique
+  unit              String
+  currentQuantity   Decimal                  @default(0) @map("current_quantity") @db.Decimal(12, 3)
+  lowStockThreshold Decimal                  @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
+  isActive          Boolean                  @default(true) @map("is_active")
+  note              String?
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+
+  stockMovements    InventoryStockMovement[]
+  purchaseRecords   InventoryPurchaseRecord[]
+  importRows        InventoryImportRow[]
+
+  @@index([isActive, name])
+  @@index([currentQuantity])
+  @@index([unit])
+  @@map("inventory_items")
+}
+
+model InventoryStockMovement {
+  id              String                     @id @default(uuid())
+  inventoryItemId String                     @map("inventory_item_id")
+  movementType    InventoryStockMovementType @map("movement_type")
+  quantityDelta   Decimal                    @map("quantity_delta") @db.Decimal(12, 3)
+  quantityBefore  Decimal                    @map("quantity_before") @db.Decimal(12, 3)
+  quantityAfter   Decimal                    @map("quantity_after") @db.Decimal(12, 3)
+  purchaseDate    DateTime?                  @map("purchase_date")
+  unitCostVnd     Int?                       @map("unit_cost_vnd")
+  totalCostVnd    Int?                       @map("total_cost_vnd")
+  note            String?
+  createdById     String?                    @map("created_by_id")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+
+  inventoryItem   InventoryItem              @relation(fields: [inventoryItemId], references: [id])
+  createdBy       User?                      @relation(fields: [createdById], references: [id])
+  purchaseRecord  InventoryPurchaseRecord?
+  invoiceAttachments InventoryInvoiceAttachment[]
+
+  @@index([inventoryItemId, createdAt])
+  @@index([movementType, createdAt])
+  @@index([purchaseDate])
+  @@map("inventory_stock_movements")
+}
+
+model InventoryPurchaseRecord {
+  id              String                 @id @default(uuid())
+  inventoryItemId String                 @map("inventory_item_id")
+  stockMovementId String                 @unique @map("stock_movement_id")
+  purchaseDate    DateTime               @map("purchase_date")
+  unitCostVnd     Int?                   @map("unit_cost_vnd")
+  totalCostVnd    Int?                   @map("total_cost_vnd")
+  supplierName    String?                @map("supplier_name")
+  note            String?
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  inventoryItem   InventoryItem          @relation(fields: [inventoryItemId], references: [id])
+  stockMovement   InventoryStockMovement @relation(fields: [stockMovementId], references: [id])
+  invoiceAttachments InventoryInvoiceAttachment[]
+
+  @@index([inventoryItemId, purchaseDate])
+  @@index([purchaseDate])
+  @@map("inventory_purchase_records")
+}
+
+model InventoryUpload {
+  id               String                  @id @default(uuid())
+  originalFileName String                  @map("original_file_name")
+  storedFilePath   String                  @map("stored_file_path")
+  mimeType         String                  @map("mime_type")
+  fileSize         Int                     @map("file_size")
+  uploadType       InventoryUploadType     @map("upload_type")
+  status           InventoryUploadStatus   @default(STORED)
+  uploadedById     String?                 @map("uploaded_by_id")
+  createdAt        DateTime                @default(now()) @map("created_at")
+
+  uploadedBy       User?                   @relation(fields: [uploadedById], references: [id])
+  importBatch      InventoryImportBatch?
+  invoiceAttachments InventoryInvoiceAttachment[]
+
+  @@index([uploadType, createdAt])
+  @@index([status, createdAt])
+  @@map("inventory_uploads")
+}
+
+model InventoryImportBatch {
+  id              String                    @id @default(uuid())
+  uploadId        String                    @unique @map("upload_id")
+  status          InventoryImportBatchStatus @default(DRAFT)
+  sourceType      InventoryImportSourceType @map("source_type")
+  parserUsed      InventoryImportParserUsed @map("parser_used")
+  rowCount        Int                       @default(0) @map("row_count")
+  validRowCount   Int                       @default(0) @map("valid_row_count")
+  invalidRowCount Int                       @default(0) @map("invalid_row_count")
+  createdById     String?                   @map("created_by_id")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  confirmedAt     DateTime?                 @map("confirmed_at")
+
+  upload          InventoryUpload           @relation(fields: [uploadId], references: [id])
+  createdBy       User?                     @relation(fields: [createdById], references: [id])
+  rows            InventoryImportRow[]
+
+  @@index([status, createdAt])
+  @@index([sourceType, createdAt])
+  @@map("inventory_import_batches")
+}
+
+model InventoryImportRow {
+  id                     String                   @id @default(uuid())
+  batchId                String                   @map("batch_id")
+  rowIndex               Int                      @map("row_index")
+  rawText                String?                  @map("raw_text")
+  parsedJson             Json                     @map("parsed_json")
+  normalizedName         String                   @map("normalized_name")
+  unit                   String?
+  quantity               Decimal?                 @db.Decimal(12, 3)
+  unitCostVnd            Int?                     @map("unit_cost_vnd")
+  totalCostVnd           Int?                     @map("total_cost_vnd")
+  purchaseDate           DateTime?                @map("purchase_date")
+  validationStatus       InventoryImportRowStatus @map("validation_status")
+  validationErrors       Json                     @map("validation_errors")
+  matchedInventoryItemId String?                  @map("matched_inventory_item_id")
+  createdAt              DateTime                 @default(now()) @map("created_at")
+
+  batch                  InventoryImportBatch     @relation(fields: [batchId], references: [id])
+  matchedInventoryItem   InventoryItem?           @relation(fields: [matchedInventoryItemId], references: [id])
+
+  @@unique([batchId, rowIndex])
+  @@index([batchId, validationStatus])
+  @@index([matchedInventoryItemId])
+  @@map("inventory_import_rows")
+}
+
+model InventoryInvoiceAttachment {
+  id               String                   @id @default(uuid())
+  uploadId         String                   @map("upload_id")
+  stockMovementId  String?                  @map("stock_movement_id")
+  purchaseRecordId String?                  @map("purchase_record_id")
+  note             String?
+  createdAt        DateTime                 @default(now()) @map("created_at")
+
+  upload           InventoryUpload          @relation(fields: [uploadId], references: [id])
+  stockMovement    InventoryStockMovement?  @relation(fields: [stockMovementId], references: [id])
+  purchaseRecord   InventoryPurchaseRecord? @relation(fields: [purchaseRecordId], references: [id])
+
+  @@index([uploadId])
+  @@index([stockMovementId])
+  @@index([purchaseRecordId])
+  @@map("inventory_invoice_attachments")
 }
