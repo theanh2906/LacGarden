@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import {
   createImportBatchFromUpload,
   InventoryImportError,
@@ -10,6 +11,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const session = await requireStaffPermission("inventory:manage");
     const formData = await request.formData();
     const file = formData.get("file");
     const uploadType = String(formData.get("uploadType") ?? "IMPORT").toUpperCase() as InventoryUploadType;
@@ -24,11 +26,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { code: "UPLOAD_TYPE_INVALID", message: "uploadType must be IMPORT or INVOICE." } }, { status: 400 });
     }
 
-    const upload = await saveInventoryUpload({ file, uploadType });
-    const batch = uploadType === "IMPORT" && parse ? await createImportBatchFromUpload({ uploadId: upload.id, parserPreference: parser }) : null;
+    const upload = await saveInventoryUpload({ file, uploadType, uploadedById: session.staff.id });
+    const batch =
+      uploadType === "IMPORT" && parse
+        ? await createImportBatchFromUpload({ uploadId: upload.id, parserPreference: parser, createdById: session.staff.id })
+        : null;
 
     return NextResponse.json({ data: { upload, batch } }, { status: 201 });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     console.info("[inventory-api] Upload failed", error);
     return NextResponse.json(
       {

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import { createInventoryItem, getInventoryErrorMessage, listInventoryItems } from "@/server/inventory";
 import { createInventoryItemSchema, inventoryStatusFilterSchema } from "@/server/inventory-validation";
 
 export async function GET(request: Request) {
   try {
+    await requireStaffPermission("inventory:manage");
     const { searchParams } = new URL(request.url);
     const status = inventoryStatusFilterSchema.parse(searchParams.get("status") ?? "all");
     const q = searchParams.get("q");
@@ -18,6 +20,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await requireStaffPermission("inventory:manage");
     const body = await request.json();
     const input = createInventoryItemSchema.parse(body);
     const data = await createInventoryItem(input);
@@ -29,6 +32,9 @@ export async function POST(request: Request) {
 }
 
 function toInventoryErrorResponse(error: unknown) {
+  const authResponse = authErrorResponse(error);
+  if (authResponse) return authResponse;
+
   console.info("[inventory-api] Inventory items request failed", error);
 
   if (error instanceof z.ZodError) {

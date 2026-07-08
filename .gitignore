@@ -13,6 +13,7 @@ apps/web/.next
 apps/web/storage
 apps/web/demo-*.png
 screenshots
+docs/assets/qa/auth-state.json
 apps/api/dist
 apps/api/prisma/migrations/dev.db
 backups

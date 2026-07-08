@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   BarChart3,
+  Calculator,
   CheckCircle2,
   ClipboardList,
   FileText,
@@ -428,6 +429,9 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
           </a>
           <a className={styles.secondaryButton} href="/inventory/reports">
             <BarChart3 size={17} /> Reports
+          </a>
+          <a className={styles.secondaryButton} href="/inventory/costing">
+            <Calculator size={17} /> Costing
           </a>
           <button className={styles.secondaryButton} type="button" onClick={() => refreshItems(statusFilter, true).catch((error) => logInventoryAdminError("Failed to refresh inventory items", error))} disabled={isSubmitting}>
             <ButtonContent loading={pendingOperation === "refresh"} icon={<RefreshCw size={17} />} label="Làm mới" loadingLabel="Đang tải..." />

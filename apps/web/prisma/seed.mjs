@@ -1,8 +1,11 @@
+import { randomBytes, scryptSync } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const SYSTEM_CASHIER_USERNAME = "system-cashier";
+const DEFAULT_OWNER_USERNAME = process.env.COFFEE_POS_OWNER_USERNAME ?? "admin";
+const DEFAULT_OWNER_PIN = process.env.COFFEE_POS_OWNER_PIN ?? "admin";
 const RESET_SEED_DATA = process.env.COFFEE_POS_RESET_SEED_DATA === "1";
 
 const menuItems = [
@@ -122,6 +125,23 @@ async function main() {
       displayName: "System Cashier",
       pinHash: "DISABLED_UNTIL_AUTH",
       role: "CASHIER",
+      isActive: true
+    }
+  });
+
+  await prisma.user.upsert({
+    where: { username: DEFAULT_OWNER_USERNAME },
+    create: {
+      username: DEFAULT_OWNER_USERNAME,
+      displayName: "Owner",
+      pinHash: hashStaffPin(DEFAULT_OWNER_PIN),
+      role: "OWNER",
+      isActive: true
+    },
+    update: {
+      displayName: "Owner",
+      pinHash: hashStaffPin(DEFAULT_OWNER_PIN),
+      role: "OWNER",
       isActive: true
     }
   });
@@ -291,4 +311,11 @@ function slugifyVi(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function hashStaffPin(pin) {
+  const params = { N: 16_384, r: 8, p: 1 };
+  const salt = randomBytes(16).toString("base64url");
+  const key = scryptSync(pin, salt, 32, params).toString("base64url");
+  return `scrypt$${params.N}$${params.r}$${params.p}$${salt}$${key}`;
 }

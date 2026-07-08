@@ -8,6 +8,13 @@ export type MenuVariant = {
   id: string;
   name: string;
   price: number;
+  cost?: {
+    totalCostVnd: number;
+    grossMarginPercent: number;
+    isLowMargin: boolean;
+    missingCostIngredientCount: number;
+    recipeSource: "target" | "item-fallback" | "none";
+  };
 };
 
 export type MenuItem = {

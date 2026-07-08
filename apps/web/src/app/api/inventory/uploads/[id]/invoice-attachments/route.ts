@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import { attachInvoiceUpload } from "@/server/inventory-import";
 
 const attachInvoiceSchema = z.object({
@@ -10,6 +11,7 @@ const attachInvoiceSchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireStaffPermission("inventory:manage");
     const { id } = await params;
     const input = attachInvoiceSchema.parse(await request.json());
     const data = await attachInvoiceUpload({
@@ -20,6 +22,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     console.info("[inventory-api] Invoice attachment failed", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, Download, FileSpreadsheet, PieChart, TrendingUp } from "lucide-react";
+import { requirePagePermission } from "@/server/auth";
 import { getEmptyInventoryReport, getInventoryReport } from "@/server/inventory-reports";
 import { inventoryReportQuerySchema, type InventoryReportQueryInput } from "@/server/inventory-validation";
 import type {
@@ -26,6 +27,8 @@ type InventoryReportsPageProps = {
 };
 
 export default async function InventoryReportsPage({ searchParams }: InventoryReportsPageProps) {
+  await requirePagePermission("reports:view", "/inventory/reports");
+
   const query = parsePageQuery(await searchParams);
   let report: InventoryReportDto;
 

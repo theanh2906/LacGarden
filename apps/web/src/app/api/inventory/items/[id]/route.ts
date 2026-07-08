@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import { getInventoryErrorMessage, updateInventoryItem } from "@/server/inventory";
 import { updateInventoryItemSchema } from "@/server/inventory-validation";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireStaffPermission("inventory:manage");
     const { id } = await params;
     const body = await request.json();
     const input = updateInventoryItemSchema.parse(body);
@@ -17,6 +19,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 function toInventoryErrorResponse(error: unknown) {
+  const authResponse = authErrorResponse(error);
+  if (authResponse) return authResponse;
+
   console.info("[inventory-api] Inventory item update failed", error);
 
   if (error instanceof z.ZodError) {

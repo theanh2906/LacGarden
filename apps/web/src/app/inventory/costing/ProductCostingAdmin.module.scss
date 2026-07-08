@@ -1,0 +1,397 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 28px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    color: var(--espresso);
+    font-family: var(--font-display);
+    font-size: 34px;
+  }
+
+  p {
+    color: var(--muted);
+    font-weight: 800;
+  }
+}
+
+.eyebrow {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.headerActions,
+.ruleRow,
+.ingredientsHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0 14px;
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.metric,
+.card,
+.targetPane {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(82, 52, 30, 0.06);
+}
+
+.metric {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--espresso);
+    font-size: 24px;
+  }
+}
+
+.warnMetric strong {
+  color: var(--green);
+}
+
+.dangerMetric strong {
+  color: var(--red);
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.3fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.targetPane {
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 0 14px;
+  color: var(--espresso);
+  font-weight: 900;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+}
+
+.targetList {
+  display: grid;
+  max-height: calc(100vh - 270px);
+  overflow-y: auto;
+}
+
+.targetRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 12px 14px;
+  text-align: left;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: var(--muted);
+    font-weight: 800;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.72;
+  }
+}
+
+.selectedRow {
+  background: var(--surface-soft);
+}
+
+.targetNumbers {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+
+  b {
+    color: var(--teal);
+  }
+}
+
+.marginBadge {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(24, 94, 96, 0.1);
+  color: var(--teal);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.lowMarginBadge {
+  background: rgba(169, 74, 52, 0.12);
+  color: var(--red);
+}
+
+.noRecipeBadge {
+  background: rgba(101, 106, 54, 0.12);
+  color: var(--green);
+}
+
+.detailPane {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.panelTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--espresso);
+  font-weight: 900;
+}
+
+.ruleRow {
+  justify-content: space-between;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  input,
+  select {
+    min-height: 42px;
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    padding: 0 10px;
+    font: inherit;
+    font-weight: 800;
+  }
+}
+
+.costSummary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.costCell {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+
+  span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--espresso);
+  }
+}
+
+.dangerCell strong {
+  color: var(--red);
+}
+
+.warningText {
+  margin: 0;
+  border-left: 3px solid var(--green);
+  background: rgba(101, 106, 54, 0.1);
+  color: var(--green);
+  padding: 9px 10px;
+  font-weight: 900;
+}
+
+.ingredientsHeader {
+  justify-content: space-between;
+}
+
+.ingredientList {
+  display: grid;
+  gap: 10px;
+}
+
+.ingredientRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 100px 90px 96px 38px;
+  gap: 8px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.iconDangerButton {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 900;
+}
+
+.primaryButton {
+  border: 1px solid var(--teal);
+  background: linear-gradient(180deg, #9d5530, #6f351d);
+  color: white;
+}
+
+.secondaryButton {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.iconDangerButton {
+  width: 38px;
+  min-width: 38px;
+  border: 1px solid rgba(169, 74, 52, 0.25);
+  background: rgba(169, 74, 52, 0.08);
+  color: var(--red);
+  padding: 0;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.iconDangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.emptyState {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+  padding: 12px;
+}
+
+.spinnerIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 980px) {
+  .header,
+  .headerActions,
+  .ruleRow {
+    display: grid;
+    justify-items: start;
+  }
+
+  .metrics,
+  .workbench,
+  .costSummary,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .targetList {
+    max-height: 360px;
+  }
+
+  .ingredientRow {
+    grid-template-columns: 1fr;
+  }
+}

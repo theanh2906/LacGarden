@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import { inventoryReportExportQuerySchema } from "@/server/inventory-validation";
 import { getEmptyInventoryReport, getInventoryReport, parseInventoryReportSearchParams } from "@/server/inventory-reports";
 import type { InventoryReportDto } from "@/types/inventory";
@@ -7,6 +8,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   try {
+    await requireStaffPermission("reports:view");
     const url = new URL(request.url);
     const query = inventoryReportExportQuerySchema.parse(Object.fromEntries(url.searchParams.entries()));
     const reportQuery = parseInventoryReportSearchParams(url.searchParams);
@@ -34,6 +36,9 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     console.info("[inventory-api] Inventory report export failed", error);
     return Response.json(
       { error: { code: "INVENTORY_REPORT_EXPORT_ERROR", message: "Unable to export inventory report. Check admin logs for details." } },

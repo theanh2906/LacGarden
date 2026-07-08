@@ -18,10 +18,12 @@ export const createOrderSchema = z.object({
 });
 
 export const checkoutOrderSchema = createOrderSchema.extend({
-  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "QR", "CARD", "OTHER"]).default("CASH"),
+  paymentMethod: z.enum(["CASH", "CARD"]).default("CASH"),
   receivedAmount: optionalIntegerVnd,
   note: z.string().trim().max(1000).optional()
 });
+
+export const qrCheckoutOrderSchema = createOrderSchema;
 
 export const addPaymentSchema = z.object({
   method: z.enum(["CASH", "BANK_TRANSFER", "QR", "CARD", "OTHER"]).default("CASH"),

@@ -9,7 +9,12 @@
     "start": "pnpm --filter @coffee-pos/web start",
     "typecheck": "pnpm --filter @coffee-pos/web typecheck",
     "db:generate": "pnpm --filter @coffee-pos/web db:generate",
-    "db:seed": "pnpm --filter @coffee-pos/web db:seed"
+    "db:seed": "pnpm --filter @coffee-pos/web db:seed",
+    "db:migrate:dev": "pnpm --filter @coffee-pos/web exec prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "pnpm --filter @coffee-pos/web exec prisma migrate deploy --schema prisma/schema.prisma",
+    "db:push": "pnpm --filter @coffee-pos/web exec prisma db push --schema prisma/schema.prisma",
+    "smoke:pos": "node scripts/smoke-pos.mjs",
+    "screenshots:qa": "node scripts/capture-qa-screenshots.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

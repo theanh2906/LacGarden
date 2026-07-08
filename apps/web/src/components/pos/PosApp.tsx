@@ -5,27 +5,39 @@ import {
   BarChart3,
   Bell,
   Bike,
+  Banknote,
   Check,
+  CheckCircle2,
   ChevronDown,
   ClipboardList,
   Coffee,
   CreditCard,
+  Landmark,
   Loader2,
+  LogOut,
   Minus,
   Package,
   Plus,
+  Printer,
+  QrCode,
   ReceiptText,
   Search,
   Send,
   Settings,
   ShoppingBag,
   SlidersHorizontal,
-  Wifi
+  Users,
+  WalletCards,
+  Wifi,
+  X
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/money";
-import type { BarTicket, CartItem, MenuItem, MenuVariant, OrderStatus, OrderType, PosSnapshot } from "@/types/pos";
+import type { StaffClientPermissions, StaffUser } from "@/types/auth";
+import type { CheckoutPaymentMethod, QrPaymentRequest } from "@/types/payment";
+import type { BarTicket, CartItem, MenuItem, MenuVariant, OrderStatus, OrderType, PosSnapshot, RecentOrder } from "@/types/pos";
 import styles from "./PosApp.module.scss";
 
 export type PosView = "POS" | "Orders" | "Queue" | "Reports" | "Settings";
@@ -42,7 +54,24 @@ const orderTypeIcons = {
   DELIVERY: Bike
 };
 
-export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapshot: PosSnapshot; initialView?: PosView }) {
+const checkoutMethods: Array<{ value: CheckoutPaymentMethod; label: string; icon: LucideIcon; disabled?: boolean; status?: string }> = [
+  { value: "CASH", label: "Tiền mặt", icon: Banknote },
+  { value: "CARD", label: "Thẻ", icon: CreditCard },
+  { value: "BANK_TRANSFER", label: "QR", icon: QrCode, disabled: true, status: "Coming soon" }
+];
+
+export function PosApp({
+  initialSnapshot,
+  initialView = "POS",
+  staff,
+  permissions
+}: {
+  initialSnapshot: PosSnapshot;
+  initialView?: PosView;
+  staff: Pick<StaffUser, "displayName" | "role">;
+  permissions: StaffClientPermissions;
+}) {
+  const router = useRouter();
   const [activeView, setActiveView] = useState<PosView>(initialView);
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
@@ -52,9 +81,19 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [toast, setToast] = useState("Sẵn sàng nhận đơn");
   const [pendingOrderAction, setPendingOrderAction] = useState<"send" | "pay" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("CASH");
+  const [qrPayment, setQrPayment] = useState<{ order: RecentOrder; payment: QrPaymentRequest } | null>(null);
+  const [isConfirmingQrPayment, setIsConfirmingQrPayment] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [pendingTicketId, setPendingTicketId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isSubmitting = pendingOrderAction !== null;
+
+  useEffect(() => {
+    if (!qrPayment) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [qrPayment]);
 
   const visibleItems = useMemo(() => {
     return snapshot.menuItems.filter((item) => {
@@ -96,6 +135,10 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
       setToast("Giỏ hàng đang trống");
       return;
     }
+    if (action === "pay" && paymentMethod === "BANK_TRANSFER") {
+      setToast("Thanh toán QR đang Coming soon. Vui lòng dùng tiền mặt hoặc thẻ.");
+      return;
+    }
 
     setPendingOrderAction(action);
     setToast(action === "send" ? "Đang gửi đơn sang quầy pha chế..." : "Đang ghi nhận thanh toán...");
@@ -110,26 +153,78 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
           modifiers: cartItem.modifiers
         }))
       };
-      const response = await fetch(action === "send" ? "/api/orders" : "/api/orders/checkout", {
+      const isQrCheckout = action === "pay" && paymentMethod === "BANK_TRANSFER";
+      const response = await fetch(action === "send" ? "/api/orders" : isQrCheckout ? "/api/orders/checkout/qr" : "/api/orders/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(action === "send" ? payload : { ...payload, paymentMethod: "CASH", receivedAmount: total })
+        body: JSON.stringify(
+          action === "send"
+            ? payload
+            : isQrCheckout
+              ? payload
+              : { ...payload, paymentMethod, receivedAmount: total }
+        )
       });
 
       if (!response.ok) {
-        setToast("Không thể ghi nhận đơn. Kiểm tra admin logs.");
+        const errorPayload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+        setToast(errorPayload?.error?.message ?? "Không thể ghi nhận đơn. Kiểm tra admin logs.");
+        return;
+      }
+
+      if (isQrCheckout) {
+        const responsePayload = (await response.json()) as { data?: { order: RecentOrder; payment: QrPaymentRequest } };
+        if (!responsePayload.data) {
+          setToast("Không thể tạo QR thanh toán.");
+          return;
+        }
+
+        setQrPayment(responsePayload.data);
+        setNow(Date.now());
+        setCartItems([]);
+        setOrderNote("");
+        setToast(`Đã tạo QR cho ${responsePayload.data.order.orderNo}`);
+        await refreshOperationalData();
         return;
       }
 
       setCartItems([]);
       setOrderNote("");
-      setToast(action === "send" ? "Đã gửi đơn sang quầy pha chế" : `Đã thanh toán ${formatVnd(total)}`);
+      setToast(action === "send" ? "Đã gửi đơn sang quầy pha chế" : `Đã thanh toán ${formatVnd(total)} bằng ${paymentMethodLabel(paymentMethod)}`);
       await refreshOperationalData();
     } catch (error) {
       console.info("[pos-ui] Order submit failed", error);
       setToast("Không thể ghi nhận đơn. Kiểm tra admin logs.");
     } finally {
       setPendingOrderAction(null);
+    }
+  }
+
+  async function confirmQrPayment() {
+    if (!qrPayment) return;
+    if (new Date(qrPayment.payment.expiresAt).getTime() <= now) {
+      setToast("QR đã hết hạn. Không thể xác nhận thanh toán.");
+      return;
+    }
+
+    setIsConfirmingQrPayment(true);
+    setToast(`Đang xác nhận ${qrPayment.order.orderNo}...`);
+    try {
+      const response = await fetch(`/api/payments/${qrPayment.payment.paymentId}/confirm`, { method: "POST" });
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+        setToast(errorPayload?.error?.message ?? "Không thể xác nhận thanh toán.");
+        return;
+      }
+
+      setToast(`Đã xác nhận thanh toán ${qrPayment.order.orderNo}`);
+      setQrPayment(null);
+      await refreshOperationalData();
+    } catch (error) {
+      console.info("[pos-ui] Manual payment confirm failed", error);
+      setToast("Không thể xác nhận thanh toán.");
+    } finally {
+      setIsConfirmingQrPayment(false);
     }
   }
 
@@ -159,23 +254,49 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
   async function refreshOperationalData() {
     setIsRefreshing(true);
     try {
-      const [ordersResponse, barResponse, salesResponse] = await Promise.all([
+      const requests = [
         fetch("/api/orders"),
-        fetch("/api/bar"),
-        fetch("/api/reports/sales")
+        fetch("/api/bar")
+      ];
+      if (permissions.canManageReports) {
+        requests.push(fetch("/api/reports/sales"));
+      }
+
+      const [ordersResponse, barResponse, salesResponse] = await Promise.all(requests);
+      const [orders, bar, sales] = await Promise.all([
+        ordersResponse.json(),
+        barResponse.json(),
+        salesResponse ? salesResponse.json() : Promise.resolve({ data: null })
       ]);
-      const [orders, bar, sales] = await Promise.all([ordersResponse.json(), barResponse.json(), salesResponse.json()]);
       setSnapshot((current) => ({
         ...current,
         recentOrders: Array.isArray(orders.data) ? orders.data : [],
         barQueue: Array.isArray(bar.data) ? bar.data : [],
-        salesReport: sales.data ?? current.salesReport
+        salesReport: permissions.canManageReports ? (sales.data ?? current.salesReport) : current.salesReport
       }));
     } catch (error) {
       console.info("[pos-ui] Refresh failed", error);
     } finally {
       setIsRefreshing(false);
     }
+  }
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch((error) => console.info("[auth-ui] Logout failed", error));
+    router.replace("/login");
+    router.refresh();
+  }
+
+  function openRestrictedView(view: PosView) {
+    if (view === "Reports" && !permissions.canManageReports) {
+      setToast("Chỉ manager/owner được xem báo cáo.");
+      return;
+    }
+    if (view === "Settings" && !permissions.canManageSettings) {
+      setToast("Chỉ manager/owner được mở cài đặt.");
+      return;
+    }
+    setActiveView(view);
   }
 
   return (
@@ -187,9 +308,11 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
         <NavItem icon={ReceiptText} label="POS" active={activeView === "POS"} onClick={() => setActiveView("POS")} />
         <NavItem icon={ClipboardList} label="Đơn hàng" active={activeView === "Orders"} onClick={() => setActiveView("Orders")} />
         <NavItem icon={Coffee} label="Pha chế" active={activeView === "Queue"} onClick={() => setActiveView("Queue")} />
-        <NavItem icon={BarChart3} label="Báo cáo" active={activeView === "Reports"} onClick={() => setActiveView("Reports")} />
-        <NavItem icon={Package} label="Kho" href="/inventory" />
-        <NavItem icon={Settings} label="Cài đặt" active={activeView === "Settings"} onClick={() => setActiveView("Settings")} />
+        <NavItem icon={BarChart3} label="Báo cáo" href={permissions.canManageReports ? "/reports" : undefined} onClick={() => openRestrictedView("Reports")} disabled={!permissions.canManageReports} />
+        <NavItem icon={Users} label="Nhân sự" href="/staff" />
+        <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ manager/owner được xem payroll.")} />
+        <NavItem icon={Package} label="Kho" href={permissions.canManageInventory ? "/inventory" : undefined} disabled={!permissions.canManageInventory} onClick={() => setToast("Chỉ manager/owner được quản lý kho.")} />
+        <NavItem icon={Settings} label="Cài đặt" active={activeView === "Settings"} onClick={() => openRestrictedView("Settings")} disabled={!permissions.canManageSettings} />
       </aside>
 
       <section className={styles.workspace}>
@@ -228,12 +351,15 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
               <Bell size={19} />
             </button>
             <div className={styles.profile}>
-              <span>S</span>
+              <span>{staff.displayName.slice(0, 1).toUpperCase()}</span>
               <div>
-                <strong>System</strong>
-                <small>Cashier</small>
+                <strong>{staff.displayName}</strong>
+                <small>{roleText(staff.role)}</small>
               </div>
             </div>
+            <button className={styles.iconButton} aria-label="Đăng xuất" onClick={signOut}>
+              <LogOut size={19} />
+            </button>
           </div>
         </header>
 
@@ -286,7 +412,10 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
                             <h3>{item.name}</h3>
                             <p>{item.description}</p>
                           </div>
-                          <strong>{formatVnd(defaultVariant?.price ?? 0)}</strong>
+                          <div className={styles.productPriceBlock}>
+                            <strong>{formatVnd(defaultVariant?.price ?? 0)}</strong>
+                            {defaultVariant?.cost ? <CostWarningBadge cost={defaultVariant.cost} /> : null}
+                          </div>
                         </div>
                       </button>
                     );
@@ -370,14 +499,47 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
                   </div>
                 </div>
 
+                <div className={styles.paymentSelector} aria-label="Phương thức thanh toán">
+                  {checkoutMethods.map((method) => {
+                    const Icon = method.icon;
+                    return (
+                      <button
+                        key={method.value}
+                        className={paymentMethod === method.value ? styles.selectedPaymentMethod : undefined}
+                        type="button"
+                        onClick={() => {
+                          if (method.disabled) {
+                            setToast("Thanh toán QR đang Coming soon. Vui lòng dùng tiền mặt hoặc thẻ.");
+                            return;
+                          }
+                          setPaymentMethod(method.value);
+                        }}
+                        disabled={isSubmitting || method.disabled}
+                      >
+                        <span>
+                          <Icon size={16} />
+                          {method.label}
+                        </span>
+                        {method.status ? <small>{method.status}</small> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className={styles.actionStack}>
                   <button className={styles.sendButton} onClick={() => submitOrder("send")} disabled={isSubmitting}>
                     {pendingOrderAction === "send" ? <Loader2 className={styles.spinnerIcon} size={18} /> : <Send size={18} />}
                     {pendingOrderAction === "send" ? "Đang gửi..." : "Gửi pha chế"}
                   </button>
                   <button className={styles.payButton} onClick={() => submitOrder("pay")} disabled={isSubmitting}>
-                    {pendingOrderAction === "pay" ? <Loader2 className={styles.spinnerIcon} size={18} /> : <CreditCard size={18} />}
-                    {pendingOrderAction === "pay" ? "Đang thanh toán..." : `Thanh toán ${formatVnd(total)}`}
+                    {pendingOrderAction === "pay" ? (
+                      <Loader2 className={styles.spinnerIcon} size={18} />
+                    ) : paymentMethod === "BANK_TRANSFER" ? (
+                      <QrCode size={18} />
+                    ) : (
+                      <CreditCard size={18} />
+                    )}
+                    {pendingOrderAction === "pay" ? "Đang thanh toán..." : paymentMethod === "BANK_TRANSFER" ? `Tạo QR ${formatVnd(total)}` : `Thanh toán ${formatVnd(total)}`}
                   </button>
                 </div>
 
@@ -385,10 +547,25 @@ export function PosApp({ initialSnapshot, initialView = "POS" }: { initialSnapsh
               </aside>
             </>
           ) : (
-            <Workspace view={activeView} snapshot={snapshot} pendingTicketId={pendingTicketId} updateTicketStatus={updateTicketStatus} />
+            <Workspace
+              view={activeView}
+              snapshot={snapshot}
+              pendingTicketId={pendingTicketId}
+              updateTicketStatus={updateTicketStatus}
+              permissions={permissions}
+            />
           )}
         </div>
       </section>
+      {qrPayment ? (
+        <QrPaymentModal
+          qrPayment={qrPayment}
+          now={now}
+          isConfirming={isConfirmingQrPayment}
+          onConfirm={confirmQrPayment}
+          onClose={() => setQrPayment(null)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -398,13 +575,15 @@ function NavItem({
   label,
   active = false,
   onClick,
-  href
+  href,
+  disabled = false
 }: {
   icon: LucideIcon;
   label: string;
   active?: boolean;
   onClick?: () => void;
   href?: string;
+  disabled?: boolean;
 }) {
   const content = (
     <>
@@ -413,7 +592,7 @@ function NavItem({
     </>
   );
 
-  if (href) {
+  if (href && !disabled) {
     return (
       <Link className={styles.navItem} href={href}>
         {content}
@@ -422,7 +601,7 @@ function NavItem({
   }
 
   return (
-    <button className={`${styles.navItem} ${active ? styles.activeNav : ""}`} onClick={onClick} type="button">
+    <button className={`${styles.navItem} ${active ? styles.activeNav : ""}`} onClick={onClick} type="button" disabled={disabled}>
       {content}
     </button>
   );
@@ -432,12 +611,14 @@ function Workspace({
   view,
   snapshot,
   pendingTicketId,
-  updateTicketStatus
+  updateTicketStatus,
+  permissions
 }: {
   view: Exclude<PosView, "POS">;
   snapshot: PosSnapshot;
   pendingTicketId: string | null;
   updateTicketStatus: (ticket: BarTicket, status: OrderStatus) => Promise<void>;
+  permissions: StaffClientPermissions;
 }) {
   if (view === "Orders") {
     return (
@@ -450,6 +631,7 @@ function Workspace({
             <span>Trạng thái</span>
             <span>Thanh toán</span>
             <span>Tổng</span>
+            <span>In</span>
           </div>
           {snapshot.recentOrders.map((order) => (
             <div className={styles.tableRow} key={order.id}>
@@ -458,6 +640,13 @@ function Workspace({
               <span>{orderStatusText(order.status)}</span>
               <span>{paymentStatusText(order.paymentStatus)}</span>
               <strong>{formatVnd(order.total)}</strong>
+              {order.paymentStatus === "PAID" ? (
+                <Link className={styles.printLink} href={`/print/receipt/${order.id}`} target="_blank">
+                  <Printer size={15} /> Receipt
+                </Link>
+              ) : (
+                <span>-</span>
+              )}
             </div>
           ))}
           {!snapshot.recentOrders.length ? <p className={styles.emptyText}>Chưa có đơn hàng.</p> : null}
@@ -489,7 +678,12 @@ function Workspace({
                   <strong>{barItemStatusText(item.status)}</strong>
                 </div>
               ))}
-              <div className={styles.queueActions}>{queueActions(ticket, pendingTicketId, updateTicketStatus)}</div>
+              <div className={styles.queueActions}>
+                <Link href={`/print/bar-ticket/${ticket.id}`} target="_blank">
+                  <Printer size={15} /> Ticket
+                </Link>
+                {queueActions(ticket, pendingTicketId, updateTicketStatus)}
+              </div>
             </article>
           ))}
           {!snapshot.barQueue.length ? <p className={styles.emptyText}>Không có đơn nào trong hàng chờ.</p> : null}
@@ -499,6 +693,14 @@ function Workspace({
   }
 
   if (view === "Reports") {
+    if (!permissions.canManageReports) {
+      return (
+        <section className={styles.pagePane}>
+          <SectionHeading title="Báo cáo" description="Chỉ manager/owner được xem dữ liệu báo cáo." />
+        </section>
+      );
+    }
+
     const report = snapshot.salesReport;
     return (
       <section className={styles.pagePane}>
@@ -534,9 +736,11 @@ function Workspace({
 
   return (
     <section className={styles.pagePane}>
-      <SectionHeading title="Cài đặt" description="Các cấu hình vận hành sẽ được bổ sung sau khi có auth và phân quyền." />
+      <SectionHeading title="Cài đặt" description="Các cấu hình vận hành sẽ được bổ sung ở các milestone sau." />
       <div className={styles.tableCard}>
-        <p className={styles.emptyText}>Chưa có cấu hình khả dụng trong phiên bản này.</p>
+        <p className={styles.emptyText}>
+          {permissions.canManageSettings ? "Chưa có cấu hình khả dụng trong phiên bản này." : "Chỉ manager/owner được mở cài đặt."}
+        </p>
       </div>
     </section>
   );
@@ -635,6 +839,94 @@ function queueActions(ticket: BarTicket, pendingTicketId: string | null, updateT
   return null;
 }
 
+function QrPaymentModal({
+  qrPayment,
+  now,
+  isConfirming,
+  onConfirm,
+  onClose
+}: {
+  qrPayment: { order: RecentOrder; payment: QrPaymentRequest };
+  now: number;
+  isConfirming: boolean;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const expiresAtMs = new Date(qrPayment.payment.expiresAt).getTime();
+  const remainingSeconds = Math.max(0, Math.floor((expiresAtMs - now) / 1000));
+  const isExpired = remainingSeconds <= 0;
+
+  return (
+    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="qr-payment-title">
+      <section className={styles.paymentModal}>
+        <header className={styles.paymentModalHeader}>
+          <div>
+            <span className={styles.paymentModalIcon}>
+              <QrCode size={22} />
+            </span>
+            <div>
+              <h2 id="qr-payment-title">Thanh toán QR</h2>
+              <p>{qrPayment.order.orderNo}</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Đóng modal thanh toán">
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className={styles.qrPaymentGrid}>
+          <div className={styles.qrBox}>
+            <img src={qrPayment.payment.qrImageUrl} alt={`QR thanh toán ${qrPayment.order.orderNo}`} />
+          </div>
+          <div className={styles.paymentDetails}>
+            <DetailRow label="Số tiền" value={formatVnd(qrPayment.payment.amount)} strong />
+            <DetailRow label="Nội dung" value={qrPayment.payment.qrContent} />
+            <DetailRow label="Ngân hàng" value={qrPayment.payment.bankName} />
+            <DetailRow label="Số TK" value={qrPayment.payment.bankAccountNumber} />
+            <DetailRow label="Chủ TK" value={qrPayment.payment.bankAccountName} />
+            <div className={`${styles.expiryState} ${isExpired ? styles.expiredState : ""}`}>
+              <Landmark size={16} />
+              <span>{isExpired ? "QR đã hết hạn" : `Còn ${formatDuration(remainingSeconds)}`}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer className={styles.paymentModalActions}>
+          <button className={styles.secondaryModalButton} type="button" onClick={onClose}>
+            Đóng
+          </button>
+          <button className={styles.confirmPaymentButton} type="button" onClick={onConfirm} disabled={isConfirming || isExpired}>
+            {isConfirming ? <Loader2 className={styles.spinnerIcon} size={18} /> : <CheckCircle2 size={18} />}
+            {isConfirming ? "Đang xác nhận..." : "Xác nhận đã nhận tiền"}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className={styles.detailRow}>
+      <span>{label}</span>
+      {strong ? <strong>{value}</strong> : <b>{value}</b>}
+    </div>
+  );
+}
+
+function CostWarningBadge({ cost }: { cost: NonNullable<MenuVariant["cost"]> }) {
+  if (cost.isLowMargin) {
+    return <small className={styles.lowMarginWarning}>Low margin {cost.grossMarginPercent}%</small>;
+  }
+  if (cost.recipeSource === "none") {
+    return <small className={styles.costSetupWarning}>No recipe</small>;
+  }
+  if (cost.missingCostIngredientCount > 0) {
+    return <small className={styles.costSetupWarning}>Missing cost</small>;
+  }
+  return null;
+}
+
 function defaultModifiers(item: MenuItem) {
   if (item.image === "coffee") return ["50% đường"];
   if (item.image === "soda" || item.image === "fruittea") return ["Ít đá"];
@@ -675,4 +967,30 @@ function barItemStatusText(status: string) {
     Cancelled: "Đã huỷ"
   };
   return map[status] ?? status;
+}
+
+function roleText(role: StaffUser["role"]) {
+  const map: Record<StaffUser["role"], string> = {
+    OWNER: "Owner",
+    MANAGER: "Manager",
+    CASHIER: "Cashier",
+    BARISTA: "Barista",
+    VIEWER: "Viewer"
+  };
+  return map[role];
+}
+
+function paymentMethodLabel(method: CheckoutPaymentMethod) {
+  const labels: Record<CheckoutPaymentMethod, string> = {
+    CASH: "tiền mặt",
+    CARD: "thẻ",
+    BANK_TRANSFER: "QR chuyển khoản"
+  };
+  return labels[method];
+}
+
+function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }

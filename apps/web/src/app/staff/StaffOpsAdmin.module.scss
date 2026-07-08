@@ -1,0 +1,438 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 28px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    color: var(--espresso);
+    font-family: var(--font-display);
+    font-size: 34px;
+  }
+
+  p {
+    color: var(--muted);
+    font-weight: 800;
+  }
+}
+
+.eyebrow,
+.kicker {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.headerActions,
+.panelTitle,
+.primaryButton,
+.secondaryButton,
+.actionRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice,
+.clockPanel,
+.metric,
+.card,
+.employeePane,
+.tablePanel,
+.taxPanel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(82, 52, 30, 0.06);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.clockPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.4fr) 120px auto;
+  gap: 14px;
+  align-items: center;
+  margin: 16px 0;
+  padding: 16px;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    color: var(--espresso);
+    font-family: var(--font-display);
+    font-size: 26px;
+  }
+
+  p,
+  small {
+    color: var(--muted);
+    font-weight: 800;
+  }
+}
+
+.clockState {
+  display: grid;
+  gap: 4px;
+}
+
+.breakInput,
+.field {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  input,
+  select {
+    min-height: 42px;
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    padding: 0 10px;
+    font: inherit;
+    font-weight: 800;
+  }
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--espresso);
+    font-size: 24px;
+  }
+}
+
+.warnMetric strong {
+  color: var(--green);
+}
+
+.dangerMetric strong {
+  color: var(--red);
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(560px, 1.3fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.employeePane,
+.detailPane,
+.twoColumn {
+  display: grid;
+  gap: 14px;
+}
+
+.toolbar {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 0 14px;
+  color: var(--espresso);
+  font-weight: 900;
+
+  button {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--teal);
+    padding: 0 10px;
+    font-weight: 900;
+  }
+}
+
+.employeeList {
+  display: grid;
+  max-height: 360px;
+  overflow-y: auto;
+
+  > button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    padding: 12px 14px;
+    text-align: left;
+
+    strong,
+    small {
+      display: block;
+    }
+
+    small {
+      color: var(--muted);
+      font-weight: 800;
+    }
+  }
+}
+
+.selectedRow {
+  background: var(--surface-soft) !important;
+}
+
+.card,
+.tablePanel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.panelTitle {
+  color: var(--espresso);
+  font-weight: 900;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.primaryButton,
+.secondaryButton,
+.actionRow button,
+.adjustmentForm button,
+.scheduleGrid button,
+.emptyBlock button {
+  min-height: 40px;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-weight: 900;
+}
+
+.primaryButton {
+  border: 1px solid var(--teal);
+  background: linear-gradient(180deg, #9d5530, #6f351d);
+  color: white;
+}
+
+.secondaryButton,
+.actionRow button,
+.adjustmentForm button,
+.scheduleGrid button,
+.emptyBlock button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.actionRow button:disabled,
+.adjustmentForm button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.statusBadge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.status_ACTIVE {
+  background: rgba(24, 94, 96, 0.1);
+  color: var(--teal);
+}
+
+.status_ON_LEAVE {
+  background: rgba(101, 106, 54, 0.12);
+  color: var(--green);
+}
+
+.status_TERMINATED {
+  background: rgba(169, 74, 52, 0.12);
+  color: var(--red);
+}
+
+.scheduleGrid,
+.timesheetList {
+  display: grid;
+  gap: 10px;
+}
+
+.scheduleGrid article,
+.timesheetList article,
+.emptyBlock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px;
+
+  strong,
+  span,
+  small {
+    display: block;
+  }
+
+  span,
+  small {
+    color: var(--muted);
+    font-weight: 800;
+  }
+}
+
+.scheduleGrid article button {
+  grid-row: span 2;
+}
+
+.twoColumn {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  margin-top: 16px;
+}
+
+.tablePanel {
+  overflow: hidden;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--line);
+    padding: 10px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--muted);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+  }
+
+  td small {
+    display: block;
+    color: var(--muted);
+  }
+}
+
+.actionRow {
+  justify-content: flex-end;
+}
+
+.adjustmentForm {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 90px minmax(160px, 1fr) auto;
+  gap: 8px;
+
+  input,
+  select {
+    min-height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    padding: 0 10px;
+  }
+}
+
+.emptyState,
+.emptyBlock p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.spinnerIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 980px) {
+  .header,
+  .clockPanel,
+  .workbench,
+  .twoColumn,
+  .adjustmentForm {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

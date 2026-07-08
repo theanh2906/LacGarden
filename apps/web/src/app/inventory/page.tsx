@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requirePagePermission } from "@/server/auth";
 import { getInventoryAdminSnapshot } from "@/server/inventory";
 import type { InventoryAdminSnapshot } from "@/types/inventory";
 import { InventoryAdmin } from "./InventoryAdmin";
@@ -24,6 +25,8 @@ const emptySnapshot: InventoryAdminSnapshot = {
 };
 
 export default async function InventoryPage() {
+  await requirePagePermission("inventory:manage", "/inventory");
+
   try {
     const snapshot = await getInventoryAdminSnapshot();
     return <InventoryAdmin initialSnapshot={snapshot} />;

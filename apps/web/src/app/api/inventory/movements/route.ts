@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import {
   createInventoryStockMovement,
   getInventoryErrorMessage,
@@ -10,6 +11,7 @@ import { createStockMovementSchema } from "@/server/inventory-validation";
 
 export async function GET() {
   try {
+    await requireStaffPermission("inventory:manage");
     const data = await listInventoryStockMovements({ limit: 50 });
 
     return NextResponse.json({ data });
@@ -20,9 +22,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireStaffPermission("inventory:manage");
     const body = await request.json();
     const input = createStockMovementSchema.parse(body);
-    const data = await createInventoryStockMovement(input);
+    const data = await createInventoryStockMovement({ ...input, createdById: session.staff.id });
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
@@ -31,6 +34,9 @@ export async function POST(request: Request) {
 }
 
 function toInventoryErrorResponse(error: unknown) {
+  const authResponse = authErrorResponse(error);
+  if (authResponse) return authResponse;
+
   console.info("[inventory-api] Stock movement request failed", error);
 
   if (error instanceof z.ZodError) {

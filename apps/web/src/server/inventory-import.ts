@@ -306,7 +306,11 @@ export async function updateImportRows(batchId: string, input: UpdateImportRowsI
   return getImportBatch(batchId);
 }
 
-export async function confirmImportBatch(batchId: string, input: ConfirmImportInput = {}): Promise<InventoryImportConfirmResultDto> {
+export async function confirmImportBatch(
+  batchId: string,
+  input: ConfirmImportInput = {},
+  context: { createdById?: string } = {}
+): Promise<InventoryImportConfirmResultDto> {
   const db = getDb();
   const batch = await db.inventoryImportBatch.findUniqueOrThrow({
     where: { id: batchId },
@@ -372,7 +376,8 @@ export async function confirmImportBatch(batchId: string, input: ConfirmImportIn
             purchaseDate: row.purchaseDate,
             unitCostVnd: row.unitCostVnd,
             totalCostVnd,
-            note: `Import batch ${batch.id}`
+            note: `Import batch ${batch.id}`,
+            createdById: context.createdById ?? null
           }
         });
 

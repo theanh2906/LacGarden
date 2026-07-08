@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
+import { createOrderItemCostSnapshotsInTransaction, getMenuVariantCostSummaries, type MenuVariantCostSummary } from "@/server/costing";
 import { getDb } from "@/server/db";
+import { buildProviderReference, createBankTransferQrRequest, getBankTransferExpiryDate } from "@/server/payment-qr";
 import type { AddPaymentInput, CheckoutOrderInput, CreateOrderInput, UpdateOrderStatusInput } from "@/server/pos-validation";
+import type { QrPaymentRequest } from "@/types/payment";
 import type {
   BarItemStatus,
   BarTicket,
@@ -32,12 +35,29 @@ type PosOrder = Prisma.OrderGetPayload<{
   };
 }>;
 
-export async function getPosSnapshot(): Promise<PosSnapshot> {
+type PosPayment = Prisma.PaymentGetPayload<Record<string, never>>;
+
+type StaffContext = {
+  staffId?: string;
+};
+
+export function getEmptySalesReport(): SalesReportDto {
+  return {
+    revenueToday: 0,
+    orderCount: 0,
+    averageOrderValue: 0,
+    cashPercent: 0,
+    transferPercent: 0,
+    topProducts: []
+  };
+}
+
+export async function getPosSnapshot({ includeSalesReport = true }: { includeSalesReport?: boolean } = {}): Promise<PosSnapshot> {
   const [menu, recentOrders, barQueue, salesReport] = await Promise.all([
     listMenu(),
     listRecentOrders(),
     listBarQueue(),
-    getSalesReport()
+    includeSalesReport ? getSalesReport() : getEmptySalesReport()
   ]);
 
   return {
@@ -71,9 +91,16 @@ export async function listMenu(): Promise<{ menuCategories: MenuCategory[]; menu
     })
   ]);
 
+  const variantCostById = await getMenuVariantCostSummaries(
+    items.flatMap((item) => item.variants.map((variant) => ({ id: variant.id, itemId: variant.itemId, price: variant.price })))
+  ).catch((error) => {
+    console.info("[pos] Failed to load product costing summaries", error);
+    return new Map<string, MenuVariantCostSummary>();
+  });
+
   return {
     menuCategories: [{ id: "all", name: "Tất cả" }, ...categories.map((category) => ({ id: category.id, name: category.name }))],
-    menuItems: items.map(mapMenuItem).filter((item) => item.variants.length > 0)
+    menuItems: items.map((item) => mapMenuItem(item, variantCostById)).filter((item) => item.variants.length > 0)
   };
 }
 
@@ -166,33 +193,173 @@ export async function getSalesReport(): Promise<SalesReportDto> {
   };
 }
 
-export async function createOrder(input: CreateOrderInput): Promise<RecentOrder> {
+export async function getPrintableReceipt(orderId: string) {
   const db = getDb();
-  const order = await db.$transaction(async (tx) => createOrderInTransaction(tx, input), POS_TRANSACTION_OPTIONS);
+  const order = await db.order.findUniqueOrThrow({
+    where: { id: orderId },
+    include: {
+      createdBy: {
+        select: {
+          displayName: true
+        }
+      },
+      items: {
+        orderBy: { createdAt: "asc" }
+      },
+      payments: {
+        where: {
+          status: "CONFIRMED"
+        },
+        include: {
+          confirmedBy: {
+            select: {
+              displayName: true
+            }
+          }
+        },
+        orderBy: { createdAt: "asc" }
+      }
+    }
+  });
+
+  if (order.paymentStatus !== "PAID") {
+    throw new PosServiceError("Receipt is only available for paid orders.");
+  }
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    orderType: order.orderType,
+    orderTypeLabel: orderTypeLabel(order.orderType),
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    subtotal: toNumber(order.subtotal),
+    discountTotal: toNumber(order.discountTotal),
+    total: toNumber(order.total),
+    note: order.note,
+    createdAt: order.createdAt.toISOString(),
+    paidAt: order.paidAt?.toISOString() ?? null,
+    cashierName: order.createdBy.displayName,
+    items: order.items.map((item) => {
+      const lineNote = parseLineNote(item.note);
+      return {
+        id: item.id,
+        name: item.itemNameSnapshot,
+        variant: item.variantNameSnapshot ?? "Ly",
+        quantity: item.quantity,
+        unitPrice: toNumber(item.unitPriceSnapshot),
+        lineTotal: toNumber(item.lineTotal),
+        modifiers: lineNote.modifiers,
+        note: lineNote.note
+      };
+    }),
+    payments: order.payments.map((payment) => ({
+      id: payment.id,
+      method: payment.method,
+      amount: toNumber(payment.amount),
+      receivedAmount: toNumber(payment.receivedAmount),
+      changeAmount: toNumber(payment.changeAmount),
+      confirmedByName: payment.confirmedBy.displayName,
+      createdAt: payment.createdAt.toISOString()
+    }))
+  };
+}
+
+export async function getPrintableBarTicket(orderId: string) {
+  const db = getDb();
+  const order = await db.order.findUniqueOrThrow({
+    where: { id: orderId },
+    include: {
+      items: {
+        orderBy: { createdAt: "asc" }
+      }
+    }
+  });
+
+  if (!["SENT", "PREPARING", "READY"].includes(order.status)) {
+    throw new PosServiceError("Bar ticket is only available for active queue orders.");
+  }
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    orderType: order.orderType,
+    orderTypeLabel: orderTypeLabel(order.orderType),
+    status: order.status,
+    note: order.note,
+    createdAt: order.createdAt.toISOString(),
+    age: formatAge(order.createdAt),
+    items: order.items
+      .filter((item) => item.status !== "CANCELLED")
+      .map((item) => {
+        const lineNote = parseLineNote(item.note);
+        return {
+          id: item.id,
+          name: item.itemNameSnapshot,
+          variant: item.variantNameSnapshot ?? "Ly",
+          quantity: item.quantity,
+          modifiers: lineNote.modifiers,
+          note: lineNote.note,
+          status: itemStatusLabel(item.status)
+        };
+      })
+  };
+}
+
+export async function createOrder(input: CreateOrderInput, context: StaffContext = {}): Promise<RecentOrder> {
+  const db = getDb();
+  const order = await db.$transaction(async (tx) => createOrderInTransaction(tx, input, context), POS_TRANSACTION_OPTIONS);
+  await recordOrderItemCostSnapshots(order);
   return mapRecentOrder(order);
 }
 
-export async function checkoutOrder(input: CheckoutOrderInput): Promise<RecentOrder> {
+export async function checkoutOrder(input: CheckoutOrderInput, context: StaffContext = {}): Promise<RecentOrder> {
   const db = getDb();
   const order = await db.$transaction(
     async (tx) => {
-      const createdOrder = await createOrderInTransaction(tx, input);
+      const createdOrder = await createOrderInTransaction(tx, input, context);
       await createPaymentInTransaction(tx, {
         orderId: createdOrder.id,
         method: input.paymentMethod,
         amount: toNumber(createdOrder.total),
         receivedAmount: input.receivedAmount,
-        note: input.note
+        note: input.note,
+        staffId: context.staffId
       });
       return getOrderByIdInTransaction(tx, createdOrder.id);
     },
     POS_TRANSACTION_OPTIONS
   );
 
+  await recordOrderItemCostSnapshots(order);
   return mapRecentOrder(order);
 }
 
-export async function addOrderPayment(orderId: string, input: AddPaymentInput): Promise<RecentOrder> {
+export async function checkoutOrderWithBankTransferQr(
+  input: CreateOrderInput,
+  context: StaffContext = {}
+): Promise<{ order: RecentOrder; payment: QrPaymentRequest }> {
+  const db = getDb();
+  const result = await db.$transaction(
+    async (tx) => {
+      const createdOrder = await createOrderInTransaction(tx, input, context);
+      const payment = await createPendingBankTransferPaymentInTransaction(tx, createdOrder, context);
+      return {
+        order: await getOrderByIdInTransaction(tx, createdOrder.id),
+        payment
+      };
+    },
+    POS_TRANSACTION_OPTIONS
+  );
+
+  await recordOrderItemCostSnapshots(result.order);
+  return {
+    order: mapRecentOrder(result.order),
+    payment: result.payment
+  };
+}
+
+export async function addOrderPayment(orderId: string, input: AddPaymentInput, context: StaffContext = {}): Promise<RecentOrder> {
   const db = getDb();
   const order = await db.$transaction(
     async (tx) => {
@@ -201,7 +368,8 @@ export async function addOrderPayment(orderId: string, input: AddPaymentInput): 
         method: input.method,
         amount: input.amount,
         receivedAmount: input.receivedAmount,
-        note: input.note
+        note: input.note,
+        staffId: context.staffId
       });
       return getOrderByIdInTransaction(tx, orderId);
     },
@@ -209,6 +377,98 @@ export async function addOrderPayment(orderId: string, input: AddPaymentInput): 
   );
 
   return mapRecentOrder(order);
+}
+
+export async function confirmPaymentManually(paymentId: string, context: StaffContext = {}): Promise<{ order: RecentOrder; payment: ManualPaymentConfirmation }> {
+  const db = getDb();
+  const result = await db.$transaction(
+    async (tx) => {
+      const cashier = await getStaffOrSystemCashier(tx, context.staffId);
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+        include: {
+          order: {
+            include: {
+              items: true,
+              payments: true
+            }
+          }
+        }
+      });
+
+      if (payment.status === "CONFIRMED") {
+        throw new PosServiceError("Payment has already been confirmed.");
+      }
+      if (payment.status !== "PENDING") {
+        throw new PosServiceError("Only pending payments can be manually confirmed.");
+      }
+      if (payment.expiresAt && payment.expiresAt.getTime() < Date.now()) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { reconciliationStatus: "EXPIRED" }
+        });
+        throw new PosServiceError("Payment QR has expired. Create a new checkout request.");
+      }
+      if (payment.order.status === "CANCELLED") {
+        throw new PosServiceError("Cannot confirm payment for a cancelled order.");
+      }
+
+      const paidAmount = toNumber(payment.amount);
+      const paidAt = new Date();
+      const updatedCount = await tx.payment.updateMany({
+        where: {
+          id: payment.id,
+          status: "PENDING"
+        },
+        data: {
+          status: "CONFIRMED",
+          receivedAmount: BigInt(paidAmount),
+          changeAmount: BigInt(0),
+          paidAmount: BigInt(paidAmount),
+          paidAt,
+          reconciliationStatus: "MANUAL_CONFIRMED",
+          confirmedById: cashier.id
+        }
+      });
+
+      if (updatedCount.count !== 1) {
+        throw new PosServiceError("Payment has already been handled.");
+      }
+
+      const confirmedPaid =
+        payment.order.payments
+          .filter((orderPayment) => orderPayment.status === "CONFIRMED")
+          .reduce((total, orderPayment) => total + toNumber(orderPayment.amount), 0) + paidAmount;
+      const orderTotal = toNumber(payment.order.total);
+      const paymentStatus = confirmedPaid >= orderTotal ? "PAID" : confirmedPaid > 0 ? "PARTIAL" : "UNPAID";
+
+      await tx.order.update({
+        where: { id: payment.orderId },
+        data: {
+          paymentStatus,
+          ...(paymentStatus === "PAID" ? { paidAt } : {})
+        }
+      });
+
+      const order = await getOrderByIdInTransaction(tx, payment.orderId);
+      return {
+        order,
+        payment: {
+          id: payment.id,
+          status: "CONFIRMED" as const,
+          paidAmount,
+          paidAt: paidAt.toISOString(),
+          reconciliationStatus: "MANUAL_CONFIRMED" as const
+        }
+      };
+    },
+    POS_TRANSACTION_OPTIONS
+  );
+
+  return {
+    order: mapRecentOrder(result.order),
+    payment: result.payment
+  };
 }
 
 export async function updateOrderStatus(orderId: string, input: UpdateOrderStatusInput): Promise<RecentOrder> {
@@ -255,12 +515,20 @@ export function getPosErrorMessage(error: unknown) {
   return "POS operation failed. Check admin logs for details.";
 }
 
-async function createOrderInTransaction(tx: Prisma.TransactionClient, input: CreateOrderInput): Promise<PosOrder> {
+type ManualPaymentConfirmation = {
+  id: string;
+  status: "CONFIRMED";
+  paidAmount: number;
+  paidAt: string;
+  reconciliationStatus: "MANUAL_CONFIRMED";
+};
+
+async function createOrderInTransaction(tx: Prisma.TransactionClient, input: CreateOrderInput, context: StaffContext): Promise<PosOrder> {
   if (input.items.length === 0) {
     throw new PosServiceError("Cart is empty.");
   }
 
-  const cashier = await getSystemCashier(tx);
+  const cashier = await getStaffOrSystemCashier(tx, context.staffId);
   const variantIds = [...new Set(input.items.map((line) => line.variantId))];
   const variants = await tx.menuItemVariant.findMany({
     where: {
@@ -332,6 +600,13 @@ async function createOrderInTransaction(tx: Prisma.TransactionClient, input: Cre
   return order;
 }
 
+async function recordOrderItemCostSnapshots(order: PosOrder) {
+  const db = getDb();
+  await db
+    .$transaction(async (tx) => createOrderItemCostSnapshotsInTransaction(tx, order.items), POS_TRANSACTION_OPTIONS)
+    .catch((error) => console.info("[pos] Failed to record product cost snapshots", error));
+}
+
 async function createPaymentInTransaction(
   tx: Prisma.TransactionClient,
   input: {
@@ -340,6 +615,7 @@ async function createPaymentInTransaction(
     amount: number;
     receivedAmount?: number;
     note?: string;
+    staffId?: string;
   }
 ) {
   if (input.amount <= 0) {
@@ -354,9 +630,10 @@ async function createPaymentInTransaction(
     throw new PosServiceError("Cannot pay a cancelled order.");
   }
 
-  const cashier = await getSystemCashier(tx);
+  const cashier = await getStaffOrSystemCashier(tx, input.staffId);
   const receivedAmount = input.receivedAmount ?? input.amount;
   const changeAmount = Math.max(0, receivedAmount - input.amount);
+  const paidAt = new Date();
 
   await tx.payment.create({
     data: {
@@ -366,6 +643,9 @@ async function createPaymentInTransaction(
       amount: BigInt(input.amount),
       receivedAmount: BigInt(receivedAmount),
       changeAmount: BigInt(changeAmount),
+      paidAmount: BigInt(input.amount),
+      paidAt,
+      reconciliationStatus: "NOT_REQUIRED",
       note: input.note,
       confirmedById: cashier.id
     }
@@ -381,8 +661,61 @@ async function createPaymentInTransaction(
     where: { id: input.orderId },
     data: {
       paymentStatus,
-      ...(paymentStatus === "PAID" ? { paidAt: new Date() } : {})
+      ...(paymentStatus === "PAID" ? { paidAt } : {})
     }
+  });
+}
+
+async function createPendingBankTransferPaymentInTransaction(
+  tx: Prisma.TransactionClient,
+  order: PosOrder,
+  context: StaffContext
+): Promise<QrPaymentRequest> {
+  const amount = toNumber(order.total);
+  if (amount <= 0) {
+    throw new PosServiceError("Payment amount must be greater than zero.");
+  }
+
+  const cashier = await getStaffOrSystemCashier(tx, context.staffId);
+  const providerReference = buildProviderReference(order.orderNo);
+  const expiresAt = getBankTransferExpiryDate();
+  const duplicatePending = await tx.payment.findFirst({
+    where: {
+      orderId: order.id,
+      method: "BANK_TRANSFER",
+      status: "PENDING"
+    }
+  });
+
+  if (duplicatePending) {
+    throw new PosServiceError("A pending bank transfer payment already exists for this order.");
+  }
+
+  const payment = await tx.payment.create({
+    data: {
+      orderId: order.id,
+      method: "BANK_TRANSFER",
+      status: "PENDING",
+      amount: BigInt(amount),
+      receivedAmount: null,
+      changeAmount: BigInt(0),
+      paidAmount: null,
+      paidAt: null,
+      provider: "vietqr",
+      providerReference,
+      reconciliationStatus: "PENDING",
+      expiresAt,
+      note: "Awaiting manual bank transfer confirmation",
+      confirmedById: cashier.id
+    }
+  });
+
+  return createBankTransferQrRequest({
+    paymentId: payment.id,
+    orderId: order.id,
+    orderNo: order.orderNo,
+    amount,
+    expiresAt
   });
 }
 
@@ -394,6 +727,23 @@ async function getOrderByIdInTransaction(tx: Prisma.TransactionClient, orderId: 
       payments: true
     }
   });
+}
+
+async function getStaffOrSystemCashier(tx: Prisma.TransactionClient, staffId: string | undefined) {
+  if (staffId) {
+    const staff = await tx.user.findFirst({
+      where: {
+        id: staffId,
+        isActive: true
+      }
+    });
+    if (!staff) {
+      throw new PosServiceError("Staff session is no longer active.");
+    }
+    return staff;
+  }
+
+  return getSystemCashier(tx);
 }
 
 async function getSystemCashier(tx: Prisma.TransactionClient) {
@@ -430,7 +780,7 @@ async function generateOrderNo(tx: Prisma.TransactionClient, orderType: CreateOr
   return `${prefix}-${dayKey}-${String(sequence + 1).padStart(3, "0")}`;
 }
 
-function mapMenuItem(item: PosMenuItem): MenuItem {
+function mapMenuItem(item: PosMenuItem, variantCostById: Map<string, MenuVariantCostSummary>): MenuItem {
   const tone = categoryTone(item.category.name);
   return {
     id: item.id,
@@ -442,7 +792,8 @@ function mapMenuItem(item: PosMenuItem): MenuItem {
     variants: item.variants.map((variant) => ({
       id: variant.id,
       name: variant.name,
-      price: toNumber(variant.price)
+      price: toNumber(variant.price),
+      cost: variantCostById.get(variant.id)
     }))
   };
 }

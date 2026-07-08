@@ -76,6 +76,18 @@ enum PaymentRecordStatus {
   @@map("payment_record_status")
 }
 
+enum PaymentReconciliationStatus {
+  NOT_REQUIRED
+  PENDING
+  MANUAL_CONFIRMED
+  AUTO_CONFIRMED
+  EXPIRED
+  CANCELLED
+  FAILED
+
+  @@map("payment_reconciliation_status")
+}
+
 enum ShiftStatus {
   OPEN
   CLOSED
@@ -143,6 +155,87 @@ enum InventoryImportRowStatus {
   @@map("inventory_import_row_status")
 }
 
+enum ProductRecipeTargetType {
+  MENU_ITEM
+  MENU_VARIANT
+
+  @@map("product_recipe_target_type")
+}
+
+enum ProductCostSnapshotSource {
+  RECIPE_UPDATE
+  SALE
+
+  @@map("product_cost_snapshot_source")
+}
+
+enum EmployeeEmploymentStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+
+  @@map("employee_employment_status")
+}
+
+enum StaffScheduleRole {
+  BAR
+  CASHIER
+  SERVICE
+  MANAGER
+
+  @@map("staff_schedule_role")
+}
+
+enum StaffScheduleStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+
+  @@map("staff_schedule_status")
+}
+
+enum TimeClockEntryStatus {
+  OPEN
+  CLOSED
+  MISSED_PUNCH
+  NEEDS_REVIEW
+  APPROVED
+
+  @@map("time_clock_entry_status")
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+
+  @@map("timesheet_status")
+}
+
+enum TimesheetAdjustmentType {
+  TIME_CORRECTION
+  BREAK_CORRECTION
+  MANAGER_NOTE
+
+  @@map("timesheet_adjustment_type")
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  REVIEWED
+  APPROVED
+
+  @@map("payroll_run_status")
+}
+
+enum PayrollAdjustmentType {
+  BONUS
+  DEDUCTION
+
+  @@map("payroll_adjustment_type")
+}
+
 model User {
   id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username    String    @unique
@@ -161,8 +254,218 @@ model User {
   inventoryStockMovements InventoryStockMovement[]
   inventoryUploads        InventoryUpload[]
   inventoryImportBatches  InventoryImportBatch[]
+  employeeProfile         EmployeeProfile?
 
   @@map("users")
+}
+
+model EmployeeProfile {
+  id               String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String?                  @unique(map: "employee_profiles_userId_uidx") @map("user_id") @db.Uuid
+  employeeCode     String?                  @unique(map: "employee_profiles_employeeCode_uidx") @map("employee_code")
+  displayName      String                   @map("display_name")
+  role             UserRole
+  scheduleRole     StaffScheduleRole        @default(SERVICE) @map("schedule_role")
+  phone            String?
+  email            String?
+  employmentStatus EmployeeEmploymentStatus @default(ACTIVE) @map("employment_status")
+  hourlyRateVnd    BigInt?                  @map("hourly_rate_vnd")
+  salaryMetadata   Json?                    @map("salary_metadata")
+  hiredAt          DateTime?                @map("hired_at") @db.Timestamptz(6)
+  terminatedAt     DateTime?                @map("terminated_at") @db.Timestamptz(6)
+  note             String?
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user         User?                 @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  schedules    StaffSchedule[]
+  clockEntries TimeClockEntry[]
+  timesheets   Timesheet[]
+  adjustments  TimesheetAdjustment[]
+  payrollLines PayrollLine[]
+
+  @@index([employmentStatus, displayName], map: "employee_profiles_employmentStatus_displayName_idx")
+  @@index([role], map: "employee_profiles_role_idx")
+  @@index([scheduleRole], map: "employee_profiles_scheduleRole_idx")
+  @@map("employee_profiles")
+}
+
+model StaffSchedule {
+  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employeeProfileId String              @map("employee_profile_id") @db.Uuid
+  scheduleDate      DateTime            @map("schedule_date") @db.Date
+  scheduledStartAt  DateTime            @map("scheduled_start_at") @db.Timestamptz(6)
+  scheduledEndAt    DateTime            @map("scheduled_end_at") @db.Timestamptz(6)
+  role              StaffScheduleRole
+  status            StaffScheduleStatus @default(SCHEDULED)
+  note              String?
+  createdById       String?             @map("created_by_id") @db.Uuid
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employeeProfile EmployeeProfile  @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clockEntries    TimeClockEntry[]
+
+  @@index([employeeProfileId, scheduleDate], map: "staff_schedules_employeeProfileId_scheduleDate_idx")
+  @@index([scheduleDate, role], map: "staff_schedules_scheduleDate_role_idx")
+  @@index([status, scheduleDate], map: "staff_schedules_status_scheduleDate_idx")
+  @@map("staff_schedules")
+}
+
+model TimeClockEntry {
+  id                String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employeeProfileId String               @map("employee_profile_id") @db.Uuid
+  userId            String?              @map("user_id") @db.Uuid
+  scheduleId        String?              @map("schedule_id") @db.Uuid
+  clockInAt         DateTime             @map("clock_in_at") @db.Timestamptz(6)
+  clockOutAt        DateTime?            @map("clock_out_at") @db.Timestamptz(6)
+  breakMinutes      Int                  @default(0) @map("break_minutes")
+  status            TimeClockEntryStatus @default(OPEN)
+  exceptions        Json                 @default("[]")
+  lateMinutes       Int                  @default(0) @map("late_minutes")
+  earlyLeaveMinutes Int                  @default(0) @map("early_leave_minutes")
+  overtimeMinutes   Int                  @default(0) @map("overtime_minutes")
+  missedPunch       Boolean              @default(false) @map("missed_punch")
+  note              String?
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employeeProfile EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  schedule        StaffSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([employeeProfileId, clockInAt], map: "time_clock_entries_employeeProfileId_clockInAt_idx")
+  @@index([scheduleId], map: "time_clock_entries_scheduleId_idx")
+  @@index([status, clockInAt], map: "time_clock_entries_status_clockInAt_idx")
+  @@map("time_clock_entries")
+}
+
+model Timesheet {
+  id                 String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  employeeProfileId  String          @map("employee_profile_id") @db.Uuid
+  periodStart        DateTime        @map("period_start") @db.Date
+  periodEnd          DateTime        @map("period_end") @db.Date
+  status             TimesheetStatus @default(DRAFT)
+  totalWorkedMinutes Int             @default(0) @map("total_worked_minutes")
+  totalBreakMinutes  Int             @default(0) @map("total_break_minutes")
+  lateMinutes        Int             @default(0) @map("late_minutes")
+  earlyLeaveMinutes  Int             @default(0) @map("early_leave_minutes")
+  overtimeMinutes    Int             @default(0) @map("overtime_minutes")
+  exceptionCount     Int             @default(0) @map("exception_count")
+  submittedAt        DateTime?       @map("submitted_at") @db.Timestamptz(6)
+  approvedAt         DateTime?       @map("approved_at") @db.Timestamptz(6)
+  approvedById       String?         @map("approved_by_id") @db.Uuid
+  note               String?
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employeeProfile EmployeeProfile       @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  adjustments     TimesheetAdjustment[]
+  payrollLines    PayrollLine[]
+
+  @@unique([employeeProfileId, periodStart, periodEnd], map: "timesheets_employee_period_uidx")
+  @@index([periodStart, periodEnd], map: "timesheets_period_idx")
+  @@index([status, periodStart], map: "timesheets_status_periodStart_idx")
+  @@map("timesheets")
+}
+
+model TimesheetAdjustment {
+  id                String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  timesheetId       String                  @map("timesheet_id") @db.Uuid
+  employeeProfileId String                  @map("employee_profile_id") @db.Uuid
+  adjustmentType    TimesheetAdjustmentType @map("adjustment_type")
+  minutesDelta      Int                     @default(0) @map("minutes_delta")
+  reason            String
+  createdById       String?                 @map("created_by_id") @db.Uuid
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  timesheet       Timesheet       @relation(fields: [timesheetId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  employeeProfile EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([employeeProfileId, createdAt], map: "timesheet_adjustments_employeeProfileId_createdAt_idx")
+  @@index([timesheetId], map: "timesheet_adjustments_timesheetId_idx")
+  @@map("timesheet_adjustments")
+}
+
+model PayrollPeriod {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  periodStart DateTime @map("period_start") @db.Date
+  periodEnd   DateTime @map("period_end") @db.Date
+  label       String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  runs PayrollRun[]
+
+  @@unique([periodStart, periodEnd], map: "payroll_periods_period_uidx")
+  @@index([periodStart, periodEnd], map: "payroll_periods_period_idx")
+  @@map("payroll_periods")
+}
+
+model PayrollRun {
+  id            String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  periodId      String           @map("period_id") @db.Uuid
+  status        PayrollRunStatus @default(DRAFT)
+  generatedById String?          @map("generated_by_id") @db.Uuid
+  reviewedAt    DateTime?        @map("reviewed_at") @db.Timestamptz(6)
+  approvedAt    DateTime?        @map("approved_at") @db.Timestamptz(6)
+  note          String?
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  period PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lines  PayrollLine[]
+
+  @@unique([periodId], map: "payroll_runs_periodId_uidx")
+  @@index([status, createdAt], map: "payroll_runs_status_createdAt_idx")
+  @@map("payroll_runs")
+}
+
+model PayrollLine {
+  id                    String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  runId                 String   @map("run_id") @db.Uuid
+  employeeProfileId     String   @map("employee_profile_id") @db.Uuid
+  timesheetId           String   @map("timesheet_id") @db.Uuid
+  approvedWorkedMinutes Int      @default(0) @map("approved_worked_minutes")
+  regularMinutes        Int      @default(0) @map("regular_minutes")
+  overtimeMinutes       Int      @default(0) @map("overtime_minutes")
+  hourlyRateVnd         BigInt?  @map("hourly_rate_vnd")
+  fixedSalaryVnd        BigInt?  @map("fixed_salary_vnd")
+  overtimeMultiplier    Decimal  @default(1.5) @map("overtime_multiplier") @db.Decimal(6, 2)
+  regularPayVnd         BigInt   @default(0) @map("regular_pay_vnd")
+  fixedPayVnd           BigInt   @default(0) @map("fixed_pay_vnd")
+  overtimePayVnd        BigInt   @default(0) @map("overtime_pay_vnd")
+  bonusVnd              BigInt   @default(0) @map("bonus_vnd")
+  deductionVnd          BigInt   @default(0) @map("deduction_vnd")
+  grossPayVnd           BigInt   @default(0) @map("gross_pay_vnd")
+  netPayVnd             BigInt   @default(0) @map("net_pay_vnd")
+  calculationMetadata   Json     @default("{}") @map("calculation_metadata")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  run             PayrollRun          @relation(fields: [runId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  employeeProfile EmployeeProfile     @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  timesheet       Timesheet           @relation(fields: [timesheetId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  adjustments     PayrollAdjustment[]
+
+  @@unique([runId, employeeProfileId, timesheetId], map: "payroll_lines_run_employee_timesheet_uidx")
+  @@index([employeeProfileId], map: "payroll_lines_employeeProfileId_idx")
+  @@index([timesheetId], map: "payroll_lines_timesheetId_idx")
+  @@map("payroll_lines")
+}
+
+model PayrollAdjustment {
+  id             String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lineId         String                @map("line_id") @db.Uuid
+  adjustmentType PayrollAdjustmentType @map("adjustment_type")
+  amountVnd      BigInt                @map("amount_vnd")
+  reason         String
+  createdById    String?               @map("created_by_id") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  line PayrollLine @relation(fields: [lineId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lineId, createdAt], map: "payroll_adjustments_lineId_createdAt_idx")
+  @@map("payroll_adjustments")
 }
 
 model MenuCategory {
@@ -191,9 +494,11 @@ model MenuItem {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category   MenuCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  variants   MenuItemVariant[]
-  orderItems OrderItem[]
+  category      MenuCategory          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variants      MenuItemVariant[]
+  orderItems    OrderItem[]
+  recipes       ProductRecipe[]
+  costSnapshots ProductCostSnapshot[]
 
   @@index([categoryId], map: "menu_items_categoryId_idx")
   @@index([categoryId, isActive, sortOrder], map: "menu_items_categoryId_isActive_sortOrder_idx")
@@ -211,8 +516,10 @@ model MenuItemVariant {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  item       MenuItem    @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orderItems OrderItem[]
+  item          MenuItem              @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orderItems    OrderItem[]
+  recipes       ProductRecipe[]
+  costSnapshots ProductCostSnapshot[]
 
   @@index([itemId], map: "menu_item_variants_itemId_idx")
   @@index([itemId, isActive, sortOrder], map: "menu_item_variants_itemId_isActive_sortOrder_idx")
@@ -290,9 +597,10 @@ model OrderItem {
   createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order    Order            @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  menuItem MenuItem?        @relation(fields: [menuItemId], references: [id], onUpdate: NoAction)
-  variant  MenuItemVariant? @relation(fields: [variantId], references: [id], onUpdate: NoAction)
+  order        Order                @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  menuItem     MenuItem?            @relation(fields: [menuItemId], references: [id], onUpdate: NoAction)
+  variant      MenuItemVariant?     @relation(fields: [variantId], references: [id], onUpdate: NoAction)
+  costSnapshot ProductCostSnapshot?
 
   @@index([menuItemId], map: "order_items_menuItemId_idx")
   @@index([orderId], map: "order_items_orderId_idx")
@@ -301,18 +609,24 @@ model OrderItem {
 }
 
 model Payment {
-  id             String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  orderId        String              @map("order_id") @db.Uuid
-  shiftId        String?             @map("shift_id") @db.Uuid
-  method         PaymentMethod
-  status         PaymentRecordStatus @default(CONFIRMED)
-  amount         BigInt
-  receivedAmount BigInt?             @map("received_amount")
-  changeAmount   BigInt              @default(0) @map("change_amount")
-  note           String?
-  confirmedById  String              @map("confirmed_by_id") @db.Uuid
-  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                   String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId              String                      @map("order_id") @db.Uuid
+  shiftId              String?                     @map("shift_id") @db.Uuid
+  method               PaymentMethod
+  status               PaymentRecordStatus         @default(CONFIRMED)
+  amount               BigInt
+  receivedAmount       BigInt?                     @map("received_amount")
+  changeAmount         BigInt                      @default(0) @map("change_amount")
+  paidAmount           BigInt?                     @map("paid_amount")
+  paidAt               DateTime?                   @map("paid_at") @db.Timestamptz(6)
+  provider             String?
+  providerReference    String?                     @map("provider_reference")
+  reconciliationStatus PaymentReconciliationStatus @default(NOT_REQUIRED) @map("reconciliation_status")
+  expiresAt            DateTime?                   @map("expires_at") @db.Timestamptz(6)
+  note                 String?
+  confirmedById        String                      @map("confirmed_by_id") @db.Uuid
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   shift       Shift? @relation(fields: [shiftId], references: [id], onUpdate: NoAction)
@@ -320,6 +634,8 @@ model Payment {
 
   @@index([confirmedById], map: "payments_confirmedById_idx")
   @@index([createdAt], map: "payments_createdAt_idx")
+  @@index([providerReference], map: "payments_providerReference_idx")
+  @@index([reconciliationStatus, expiresAt], map: "payments_reconciliationStatus_expiresAt_idx")
   @@index([method, status])
   @@index([orderId], map: "payments_orderId_idx")
   @@index([shiftId], map: "payments_shiftId_idx")
@@ -338,14 +654,99 @@ model InventoryItem {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  stockMovements  InventoryStockMovement[]
-  purchaseRecords InventoryPurchaseRecord[]
-  importRows      InventoryImportRow[]
+  stockMovements    InventoryStockMovement[]
+  purchaseRecords   InventoryPurchaseRecord[]
+  importRows        InventoryImportRow[]
+  recipeIngredients ProductRecipeIngredient[]
 
   @@index([isActive, name], map: "inventory_items_isActive_name_idx")
   @@index([currentQuantity], map: "inventory_items_currentQuantity_idx")
   @@index([unit])
   @@map("inventory_items")
+}
+
+model ProductRecipe {
+  id               String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  targetType       ProductRecipeTargetType @map("target_type")
+  targetKey        String                  @unique(map: "product_recipes_targetKey_uidx") @map("target_key")
+  menuItemId       String                  @map("menu_item_id") @db.Uuid
+  variantId        String?                 @map("variant_id") @db.Uuid
+  packagingCostVnd BigInt                  @default(0) @map("packaging_cost_vnd")
+  note             String?
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  menuItem      MenuItem                  @relation(fields: [menuItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variant       MenuItemVariant?          @relation(fields: [variantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ingredients   ProductRecipeIngredient[]
+  costSnapshots ProductCostSnapshot[]
+
+  @@index([menuItemId], map: "product_recipes_menuItemId_idx")
+  @@index([variantId], map: "product_recipes_variantId_idx")
+  @@map("product_recipes")
+}
+
+model ProductRecipeIngredient {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  recipeId        String   @map("recipe_id") @db.Uuid
+  inventoryItemId String   @map("inventory_item_id") @db.Uuid
+  quantity        Decimal  @db.Decimal(12, 3)
+  unit            String
+  wastePercent    Decimal  @default(0) @map("waste_percent") @db.Decimal(7, 2)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  recipe        ProductRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@index([inventoryItemId], map: "product_recipe_ingredients_inventoryItemId_idx")
+  @@index([recipeId, sortOrder], map: "product_recipe_ingredients_recipeId_sortOrder_idx")
+  @@map("product_recipe_ingredients")
+}
+
+model ProductCostSnapshot {
+  id                        String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  source                    ProductCostSnapshotSource
+  targetType                ProductRecipeTargetType   @map("target_type")
+  targetKey                 String                    @map("target_key")
+  recipeId                  String?                   @map("recipe_id") @db.Uuid
+  menuItemId                String?                   @map("menu_item_id") @db.Uuid
+  variantId                 String?                   @map("variant_id") @db.Uuid
+  orderItemId               String?                   @unique(map: "product_cost_snapshots_orderItemId_uidx") @map("order_item_id") @db.Uuid
+  salePriceVnd              BigInt                    @map("sale_price_vnd")
+  ingredientCostVnd         BigInt                    @map("ingredient_cost_vnd")
+  packagingCostVnd          BigInt                    @map("packaging_cost_vnd")
+  totalCostVnd              BigInt                    @map("total_cost_vnd")
+  grossMarginVnd            BigInt                    @map("gross_margin_vnd")
+  grossMarginPercent        Decimal                   @map("gross_margin_percent") @db.Decimal(7, 2)
+  lowMarginThresholdPercent Decimal                   @map("low_margin_threshold_percent") @db.Decimal(7, 2)
+  isLowMargin               Boolean                   @default(false) @map("is_low_margin")
+  costedAt                  DateTime                  @default(now()) @map("costed_at") @db.Timestamptz(6)
+  createdAt                 DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  recipe    ProductRecipe?   @relation(fields: [recipeId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  menuItem  MenuItem?        @relation(fields: [menuItemId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  variant   MenuItemVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  orderItem OrderItem?       @relation(fields: [orderItemId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([menuItemId, createdAt], map: "product_cost_snapshots_menuItemId_createdAt_idx")
+  @@index([variantId, createdAt], map: "product_cost_snapshots_variantId_createdAt_idx")
+  @@index([targetKey, createdAt], map: "product_cost_snapshots_targetKey_createdAt_idx")
+  @@index([source, createdAt], map: "product_cost_snapshots_source_createdAt_idx")
+  @@map("product_cost_snapshots")
+}
+
+model ProductMarginRule {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name             String   @unique(map: "product_margin_rules_name_uidx")
+  thresholdPercent Decimal  @default(35) @map("threshold_percent") @db.Decimal(7, 2)
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive], map: "product_margin_rules_isActive_idx")
+  @@map("product_margin_rules")
 }
 
 model InventoryStockMovement {

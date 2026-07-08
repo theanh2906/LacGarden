@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { authErrorResponse, requireStaffPermission } from "@/server/auth";
 import { getEmptyInventoryReport, getInventoryReport, parseInventoryReportSearchParams } from "@/server/inventory-reports";
 
 export async function GET(request: Request) {
+  try {
+    await requireStaffPermission("reports:view");
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    throw error;
+  }
+
   let query: ReturnType<typeof parseInventoryReportSearchParams>;
   try {
     query = parseInventoryReportSearchParams(new URL(request.url).searchParams);
