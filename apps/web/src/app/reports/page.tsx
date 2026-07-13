@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, Download, FileSpreadsheet, FileText, PieChart, ReceiptText, TrendingUp } from "lucide-react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { requirePagePermission } from "@/server/auth";
 import { getEmptySalesAnalyticsReport, getSalesAnalyticsReport } from "@/server/sales-reports";
 import { salesReportQuerySchema, type SalesReportQueryInput } from "@/server/sales-reports-validation";
@@ -66,12 +67,7 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
       <form className={styles.filterBar} action="/reports">
         <label>
           <span>Kỳ</span>
-          <select name="mode" defaultValue={report.period.mode}>
-            <option value="day">Ngày</option>
-            <option value="week">Tuần</option>
-            <option value="month">Tháng</option>
-            <option value="custom">Tuỳ chọn</option>
-          </select>
+          <StyledSelect name="mode" defaultValue={report.period.mode} options={[{ value: "day", label: "Ngày" }, { value: "week", label: "Tuần" }, { value: "month", label: "Tháng" }, { value: "custom", label: "Tuỳ chọn" }]} />
         </label>
         <label>
           <span>Ngày</span>

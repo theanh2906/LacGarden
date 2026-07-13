@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, BedDouble, Building2, Coffee, FileText, Home, LayoutDashboard, Loader2, Plus, ReceiptText, Users } from "lucide-react";
+import { ArrowLeft, BedDouble, Building2, FileText, Home, LayoutDashboard, Loader2, Plus, ReceiptText, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import type { DormInvoiceDto, DormPaymentMethod, DormSnapshot } from "@/types/dorm";
 import styles from "./DormAdmin.module.scss";
 
@@ -63,12 +64,12 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
     <main className={styles.page}>
       <div className={styles.shell}>
         <aside className={styles.sidebar} aria-label="Điều hướng Dorm">
-          <a className={styles.brandMark} href="/" aria-label="Quay lại POS"><Coffee size={27} /></a>
+          <a className={styles.brandMark} href="/admin" aria-label="Mở trang chọn module"><Building2 size={27} /></a>
           <DormNavItem href="/dorm" active={section === "overview"} icon={<LayoutDashboard size={21} />} label="Tổng quan" />
           <DormNavItem href="/dorm/rooms" active={section === "rooms"} icon={<BedDouble size={21} />} label="Phòng" />
           <DormNavItem href="/dorm/tenants" active={section === "tenants"} icon={<Users size={21} />} label="Khách thuê" />
           <DormNavItem href="/dorm/finance" active={section === "finance"} icon={<ReceiptText size={21} />} label="Tài chính" />
-          <a className={styles.sidebarBack} href="/"><ArrowLeft size={17} /> POS</a>
+          <a className={styles.sidebarBack} href="/admin"><ArrowLeft size={17} /> Chọn module</a>
         </aside>
 
         <section className={styles.workspace}>
@@ -117,7 +118,7 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
 
         <FormCard title="2. Thêm phòng & giường" icon={<BedDouble size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/rooms", "room", "Đã tạo phòng và các giường.")}>
-            <Field label="Cơ sở"><select name="siteId" required defaultValue=""><option value="" disabled>Chọn cơ sở</option>{snapshot.sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}</select></Field>
+          <Field label="Cơ sở"><StyledSelect name="siteId" required placeholder="Chọn cơ sở" options={snapshot.sites.map((site) => ({ value: site.id, label: site.name }))} /></Field>
             <div className={styles.splitFields}><Field label="Mã phòng"><input name="code" required placeholder="P101" /></Field><Field label="Tên hiển thị"><input name="name" required placeholder="Phòng 101" /></Field></div>
             <div className={styles.splitFields}><Field label="Số giường"><input name="bedCount" type="number" min="1" defaultValue="4" required /></Field><Field label="Giá/giường/tháng"><input name="monthlyRentVnd" type="number" min="0" defaultValue="0" required /></Field></div>
             <button className={styles.primaryButton} disabled={busy || !snapshot.sites.length}><Plus size={16} /> Tạo phòng</button>
@@ -138,8 +139,8 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
 
         <FormCard title="4. Ký hợp đồng" icon={<FileText size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/leases", "lease", "Đã ký hợp đồng và cập nhật giường sang đang thuê.")}>
-            <Field label="Khách thuê"><select name="tenantId" required defaultValue=""><option value="" disabled>Chọn khách thuê</option>{snapshot.tenants.map((tenant) => <option key={tenant.id} value={tenant.id}>{tenant.fullName} · {tenant.phone}</option>)}</select></Field>
-            <Field label="Giường trống"><select name="bedId" required defaultValue=""><option value="" disabled>Chọn giường</option>{vacantBeds.map((bed) => <option key={bed.id} value={bed.id}>{bed.label} · {currency.format(bed.rent)}</option>)}</select></Field>
+          <Field label="Khách thuê"><StyledSelect name="tenantId" required placeholder="Chọn khách thuê" options={snapshot.tenants.map((tenant) => ({ value: tenant.id, label: `${tenant.fullName} · ${tenant.phone}` }))} /></Field>
+          <Field label="Giường trống"><StyledSelect name="bedId" required placeholder="Chọn giường" options={vacantBeds.map((bed) => ({ value: bed.id, label: `${bed.label} · ${currency.format(bed.rent)}` }))} /></Field>
             <div className={styles.splitFields}><Field label="Ngày bắt đầu"><input name="startDate" type="date" required defaultValue={dateValue} /></Field><Field label="Ngày hạn thu"><input name="dueDay" type="number" min="1" max="28" required defaultValue="5" /></Field></div>
             <div className={styles.splitFields}><Field label="Giá thuê/tháng"><input name="monthlyRentVnd" type="number" min="0" required /></Field><Field label="Tiền cọc"><input name="depositVnd" type="number" min="0" defaultValue="0" required /></Field></div>
             <button className={styles.primaryButton} disabled={busy || !snapshot.tenants.length || !vacantBeds.length}><Plus size={16} /> Tạo hợp đồng</button>
@@ -153,7 +154,7 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
         <section className={styles.financeGrid}>
         <FormCard title="5. Phát hành hóa đơn tháng" icon={<ReceiptText size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/invoices", "invoice", "Đã phát hành hóa đơn tiền thuê.")}>
-            <Field label="Hợp đồng"><select name="leaseId" required defaultValue=""><option value="" disabled>Chọn hợp đồng đang hiệu lực</option>{snapshot.activeLeases.map((lease) => <option key={lease.id} value={lease.id}>{lease.tenantName} · {lease.bedLabel}</option>)}</select></Field>
+          <Field label="Hợp đồng"><StyledSelect name="leaseId" required placeholder="Chọn hợp đồng đang hiệu lực" options={snapshot.activeLeases.map((lease) => ({ value: lease.id, label: `${lease.tenantName} · ${lease.bedLabel}` }))} /></Field>
             <div className={styles.splitFields}><Field label="Kỳ hóa đơn"><input name="billingMonth" type="month" defaultValue={monthValue} required /></Field><Field label="Hạn thanh toán"><input name="dueDate" type="date" defaultValue={dateValue} required /></Field></div>
             <div className={styles.fourFields}><Field label="Điện"><input name="electricityVnd" type="number" min="0" defaultValue="0" /></Field><Field label="Nước"><input name="waterVnd" type="number" min="0" defaultValue="0" /></Field><Field label="Dịch vụ"><input name="serviceVnd" type="number" min="0" defaultValue="0" /></Field><Field label="Khác"><input name="otherVnd" type="number" min="0" defaultValue="0" /></Field></div>
             <button className={styles.primaryButton} disabled={busy || !snapshot.activeLeases.length}><ReceiptText size={16} /> Phát hành hóa đơn</button>
@@ -161,8 +162,8 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
         </FormCard>
         <FormCard title="6. Ghi nhận thanh toán" icon={<ReceiptText size={19} />}>
           <form onSubmit={(event) => void submit(event, `/api/dorm/invoices/${String(new FormData(event.currentTarget).get("invoiceId"))}/payments`, "payment", "Đã ghi nhận thanh toán.")}>
-            <Field label="Hóa đơn còn nợ"><select name="invoiceId" required defaultValue=""><option value="" disabled>Chọn hóa đơn</option>{snapshot.invoices.filter((invoice) => invoice.balanceVnd > 0).map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.invoiceNo} · {invoice.tenantName} · còn {currency.format(invoice.balanceVnd)}</option>)}</select></Field>
-            <div className={styles.splitFields}><Field label="Số tiền"><input name="amountVnd" type="number" min="1" required /></Field><Field label="Phương thức"><select name="method" defaultValue="BANK_TRANSFER">{paymentMethods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}</select></Field></div>
+          <Field label="Hóa đơn còn nợ"><StyledSelect name="invoiceId" required placeholder="Chọn hóa đơn" options={snapshot.invoices.filter((invoice) => invoice.balanceVnd > 0).map((invoice) => ({ value: invoice.id, label: `${invoice.invoiceNo} · ${invoice.tenantName} · còn ${currency.format(invoice.balanceVnd)}` }))} /></Field>
+            <div className={styles.splitFields}><Field label="Số tiền"><input name="amountVnd" type="number" min="1" required /></Field><Field label="Phương thức"><StyledSelect name="method" defaultValue="BANK_TRANSFER" options={paymentMethods} /></Field></div>
             <Field label="Mã giao dịch"><input name="reference" placeholder="Tùy chọn" /></Field>
             <button className={styles.primaryButton} disabled={busy || !snapshot.invoices.some((invoice) => invoice.balanceVnd > 0)}><ReceiptText size={16} /> Xác nhận thu tiền</button>
           </form>

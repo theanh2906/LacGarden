@@ -17,14 +17,20 @@ import type {
 } from "@/types/dorm";
 
 const ACTIVE_LEASE_STATUSES: DormLeaseStatus[] = ["ACTIVE", "NOTICE_GIVEN"];
+type DormSnapshotSection = "overview" | "rooms" | "tenants" | "finance";
 
 export class DormServiceError extends Error {}
 
-export async function getDormSnapshot(): Promise<DormSnapshot> {
+export async function getDormSnapshot(section: DormSnapshotSection = "overview"): Promise<DormSnapshot> {
   const db = getDb();
   const monthStart = startOfMonth(new Date());
+  const needsSites = section === "overview" || section === "rooms";
+  const needsTenants = section === "tenants";
+  const needsActiveLeases = section === "finance";
+  const needsInvoices = section === "overview" || section === "finance";
+  const needsSummaryInvoices = section === "overview";
   const [sites, tenants, activeLeases, invoices, allInvoices] = await Promise.all([
-    db.dormSite.findMany({
+    needsSites ? db.dormSite.findMany({
       where: { isActive: true },
       include: {
         rooms: {
@@ -45,8 +51,8 @@ export async function getDormSnapshot(): Promise<DormSnapshot> {
         }
       },
       orderBy: { name: "asc" }
-    }),
-    db.dormTenant.findMany({
+    }) : Promise.resolve([]),
+    needsTenants ? db.dormTenant.findMany({
       include: {
         leases: {
           where: { status: { in: ACTIVE_LEASE_STATUSES } },
@@ -56,21 +62,21 @@ export async function getDormSnapshot(): Promise<DormSnapshot> {
         }
       },
       orderBy: { fullName: "asc" }
-    }),
-    db.dormLease.findMany({
+    }) : Promise.resolve([]),
+    needsActiveLeases ? db.dormLease.findMany({
       where: { status: { in: ACTIVE_LEASE_STATUSES } },
       include: { tenant: true, bed: { include: { room: { include: { site: true } } } } },
       orderBy: [{ tenant: { fullName: "asc" } }]
-    }),
-    db.dormInvoice.findMany({
+    }) : Promise.resolve([]),
+    needsInvoices ? db.dormInvoice.findMany({
       include: { lease: { include: { tenant: true, bed: { include: { room: { include: { site: true } } } } } } },
       orderBy: [{ billingMonth: "desc" }, { dueDate: "asc" }],
       take: 80
-    }),
-    db.dormInvoice.findMany({
+    }) : Promise.resolve([]),
+    needsSummaryInvoices ? db.dormInvoice.findMany({
       where: { status: { not: "VOIDED" } },
       select: { billingMonth: true, totalVnd: true, paidVnd: true }
-    })
+    }) : Promise.resolve([])
   ]);
 
   const mappedSites = sites.map((site) => ({

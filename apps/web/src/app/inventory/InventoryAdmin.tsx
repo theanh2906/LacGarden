@@ -19,6 +19,7 @@ import {
   Upload
 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import type {
   InventoryAdminSnapshot,
   InventoryImportBatchDto,
@@ -508,14 +509,16 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               disabled={isSubmitting}
               onChange={(event) => setInvoiceFile(event.target.files?.[0] ?? null)}
             />
-            <select className={styles.uploadSelect} value={invoiceMovementId} onChange={(event) => setInvoiceMovementId(event.target.value)} disabled={isSubmitting}>
-              <option value="">Chỉ lưu file</option>
-              {purchaseMovements.map((movement) => (
-                <option key={movement.id} value={movement.id}>
-                  {movement.itemName} · {formatNumber(movement.quantityDelta)} · {movement.purchaseDate ? dateInputValue(movement.purchaseDate) : "no date"}
-                </option>
-              ))}
-            </select>
+            <StyledSelect
+              className={styles.uploadSelect}
+              value={invoiceMovementId}
+              onValueChange={setInvoiceMovementId}
+              disabled={isSubmitting}
+              options={[{ value: "", label: "Chỉ lưu file" }, ...purchaseMovements.map((movement) => ({
+                value: movement.id,
+                label: `${movement.itemName} · ${formatNumber(movement.quantityDelta)} · ${movement.purchaseDate ? dateInputValue(movement.purchaseDate) : "no date"}`
+              }))]}
+            />
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !invoiceFile}>
               <ButtonContent loading={pendingOperation === "uploadInvoice"} label="Tải lên" loadingLabel="Đang tải lên..." />
             </button>
@@ -755,18 +758,11 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 <form onSubmit={createMovement}>
                   <div className={styles.formGrid}>
                     <Field label="Loại">
-                      <select
+                      <StyledSelect
                         value={movementForm.movementType}
-                        onChange={(event) =>
-                          setMovementForm({ ...movementForm, movementType: event.target.value as InventoryStockMovementType })
-                        }
-                      >
-                        {movementTypes.map((type) => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
+                        onValueChange={(value) => setMovementForm({ ...movementForm, movementType: value as InventoryStockMovementType })}
+                        options={movementTypes}
+                      />
                     </Field>
                     {movementForm.movementType === "CORRECTION" ? (
                       <Field label="Tồn kiểm thực tế">

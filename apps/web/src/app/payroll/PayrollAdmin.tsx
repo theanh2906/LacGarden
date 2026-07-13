@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Loader2, Plus, RefreshCw, RotateCcw, WalletCards } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { formatVnd } from "@/lib/money";
 import type { PayrollAdjustmentType, PayrollRunDto, PayrollSnapshotDto } from "@/types/payroll";
 import styles from "./PayrollAdmin.module.scss";
@@ -125,24 +126,25 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
       </header>
 
       <form className={styles.filterBar} onSubmit={generateRun}>
-        <label>
-          <span>Từ ngày</span>
-          <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-        </label>
-        <label>
-          <span>Đến ngày</span>
-          <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
-        </label>
+        <div className={styles.dateRange}>
+          <label>
+            <span>Từ ngày</span>
+            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+          </label>
+          <label>
+            <span>Đến ngày</span>
+            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+          </label>
+        </div>
+        <section className={styles.notice} role="status">
+          {isSubmitting ? <Loader2 className={styles.spinnerIcon} size={18} /> : <WalletCards size={18} />}
+          <span>{notice}</span>
+        </section>
         <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
           {pendingOperation === "generate" ? <Loader2 className={styles.spinnerIcon} size={17} /> : <RefreshCw size={17} />}
           Tạo bảng lương
         </button>
       </form>
-
-      <section className={styles.notice} role="status">
-        {isSubmitting ? <Loader2 className={styles.spinnerIcon} size={18} /> : <WalletCards size={18} />}
-        <span>{notice}</span>
-      </section>
 
       <section className={styles.periodStrip}>
         <span>Kỳ</span>
@@ -236,17 +238,11 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
           </div>
           <label className={styles.field}>
             <span>Nhân viên</span>
-            <select value={adjustmentLineId} onChange={(event) => setAdjustmentLineId(event.target.value)} disabled={!run || isApproved}>
-              <option value="">Chọn nhân sự</option>
-              {run?.lines.map((line) => <option key={line.id} value={line.id}>{line.employeeName}</option>)}
-            </select>
+            <StyledSelect value={adjustmentLineId} onValueChange={setAdjustmentLineId} disabled={!run || isApproved} options={[{ value: "", label: "Chọn nhân sự" }, ...(run?.lines.map((line) => ({ value: line.id, label: line.employeeName })) ?? [])]} />
           </label>
           <label className={styles.field}>
             <span>Loại</span>
-            <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value as PayrollAdjustmentType)} disabled={isApproved}>
-              <option value="BONUS">Thưởng</option>
-              <option value="DEDUCTION">Khấu trừ</option>
-            </select>
+            <StyledSelect value={adjustmentType} onValueChange={(value) => setAdjustmentType(value as PayrollAdjustmentType)} disabled={isApproved} options={[{ value: "BONUS", label: "Thưởng" }, { value: "DEDUCTION", label: "Khấu trừ" }]} />
           </label>
           <label className={styles.field}>
             <span>Số tiền (VND)</span>

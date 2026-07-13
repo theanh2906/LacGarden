@@ -15,7 +15,7 @@ const emptySnapshot: DormSnapshot = {
 export async function renderDormPage(section: DormSection, path: string) {
   await requirePagePermission("dorm:manage", path);
   try {
-    return <DormAdmin initialSnapshot={await getDormSnapshot()} section={section} />;
+    return <DormAdmin initialSnapshot={await getDormSnapshot(section)} section={section} />;
   } catch (error) {
     console.info(`[dorm] Failed to load ${section} page`, error);
     return <DormAdmin initialSnapshot={emptySnapshot} section={section} />;

@@ -934,11 +934,19 @@
 .tableHeader,
 .tableRow {
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr 1fr 1fr 1fr auto;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) 104px;
   gap: 14px;
   align-items: center;
   min-height: 58px;
   padding: 0 16px;
+}
+
+.tableHeader > :nth-child(5),
+.tableRow > :nth-child(5),
+.tableHeader > :last-child,
+.tableRow > :last-child {
+  justify-self: end;
+  text-align: right;
 }
 
 .tableHeader {
@@ -1421,6 +1429,7 @@
 
   .tableRow {
     grid-template-columns: 1fr 1fr;
+    min-width: 0;
     gap: 8px;
     min-height: auto;
     padding: 14px;

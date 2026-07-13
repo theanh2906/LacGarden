@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, Download, FileSpreadsheet, PieChart, TrendingUp } from "lucide-react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { requirePagePermission } from "@/server/auth";
 import { getEmptyInventoryReport, getInventoryReport } from "@/server/inventory-reports";
 import { inventoryReportQuerySchema, type InventoryReportQueryInput } from "@/server/inventory-validation";
@@ -66,12 +67,7 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
       <form className={styles.filterBar} action="/inventory/reports">
         <label>
           <span>Kỳ</span>
-          <select name="mode" defaultValue={report.period.mode}>
-            <option value="day">Ngày</option>
-            <option value="month">Tháng</option>
-            <option value="year">Năm</option>
-            <option value="custom">Tuỳ chọn</option>
-          </select>
+          <StyledSelect name="mode" defaultValue={report.period.mode} options={[{ value: "day", label: "Ngày" }, { value: "month", label: "Tháng" }, { value: "year", label: "Năm" }, { value: "custom", label: "Tuỳ chọn" }]} />
         </label>
         <label>
           <span>Ngày</span>

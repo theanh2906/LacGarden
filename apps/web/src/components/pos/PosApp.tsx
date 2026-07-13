@@ -6,7 +6,6 @@ import {
   Bell,
   Bike,
   Banknote,
-  Building2,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -303,9 +302,9 @@ export function PosApp({
   return (
     <main className={styles.screen}>
       <aside className={styles.sidebar} aria-label="Điều hướng chính">
-        <div className={styles.brandMark}>
+        <Link className={styles.brandMark} href="/admin" aria-label="Mở trang chọn module">
           <Coffee size={28} />
-        </div>
+        </Link>
         <NavItem icon={ReceiptText} label="POS" active={activeView === "POS"} onClick={() => setActiveView("POS")} />
         <NavItem icon={ClipboardList} label="Đơn hàng" active={activeView === "Orders"} onClick={() => setActiveView("Orders")} />
         <NavItem icon={Coffee} label="Pha chế" active={activeView === "Queue"} onClick={() => setActiveView("Queue")} />
@@ -313,7 +312,6 @@ export function PosApp({
         <NavItem icon={Users} label="Nhân sự" href="/staff" />
         <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ quản lý/chủ quán được xem bảng lương.")} />
         <NavItem icon={Package} label="Kho" href={permissions.canManageInventory ? "/inventory" : undefined} disabled={!permissions.canManageInventory} onClick={() => setToast("Chỉ quản lý/chủ quán được quản lý kho.")} />
-        <NavItem icon={Building2} label="Ký túc xá" href={permissions.canManageDorm ? "/dorm" : undefined} disabled={!permissions.canManageDorm} onClick={() => setToast("Chỉ quản lý/chủ quán được quản lý khu lưu trú.")} />
         <NavItem icon={Settings} label="Cài đặt" active={activeView === "Settings"} onClick={() => openRestrictedView("Settings")} disabled={!permissions.canManageSettings} />
       </aside>
 

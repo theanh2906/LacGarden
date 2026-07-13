@@ -99,11 +99,28 @@
 
 .filterBar {
   display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 220px)) auto;
-  gap: 12px;
+  grid-template-columns: auto minmax(240px, 1fr) auto;
+  gap: 14px;
   align-items: end;
   margin-bottom: 14px;
   padding: 14px;
+}
+
+.dateRange {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 220px));
+  gap: 12px;
+}
+
+.filterBar .notice {
+  align-self: end;
+  min-width: 0;
+}
+
+.filterBar .primaryButton {
+  align-self: end;
+  min-width: 184px;
+  white-space: nowrap;
 }
 
 .field,
@@ -276,7 +293,6 @@
   display: grid;
   grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
   gap: 16px;
-  align-items: start;
   margin-top: 16px;
 }
 
@@ -345,6 +361,14 @@
   .header,
   .filterBar {
     grid-template-columns: 1fr;
+  }
+
+  .dateRange {
+    grid-template-columns: 1fr;
+  }
+
+  .filterBar .primaryButton {
+    width: 100%;
   }
 
   .header {

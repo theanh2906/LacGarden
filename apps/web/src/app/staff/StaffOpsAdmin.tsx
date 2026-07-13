@@ -14,6 +14,7 @@ import {
   Users
 } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import type { StaffUser } from "@/types/auth";
 import type {
   EmployeeProfileDto,
@@ -358,14 +359,10 @@ export function StaffOpsAdmin({ initialSnapshot, canManageStaff, staff }: StaffO
                     <input value={profileForm.employeeCode} onChange={(event) => setProfileForm({ ...profileForm, employeeCode: event.target.value })} />
                   </Field>
                   <Field label="Vai trò hệ thống">
-                    <select value={profileForm.role} onChange={(event) => setProfileForm({ ...profileForm, role: event.target.value as ProfileFormState["role"] })}>
-                      {roles.map((role) => <option key={role} value={role}>{roleText(role)}</option>)}
-                    </select>
+                    <StyledSelect value={profileForm.role} onValueChange={(value) => setProfileForm({ ...profileForm, role: value as ProfileFormState["role"] })} options={roles.map((role) => ({ value: role, label: roleText(role) }))} />
                   </Field>
                   <Field label="Vai trò ca làm">
-                    <select value={profileForm.scheduleRole} onChange={(event) => setProfileForm({ ...profileForm, scheduleRole: event.target.value as StaffScheduleRole })}>
-                      {scheduleRoles.map((role) => <option key={role} value={role}>{scheduleRoleText(role)}</option>)}
-                    </select>
+                    <StyledSelect value={profileForm.scheduleRole} onValueChange={(value) => setProfileForm({ ...profileForm, scheduleRole: value as StaffScheduleRole })} options={scheduleRoles.map((role) => ({ value: role, label: scheduleRoleText(role) }))} />
                   </Field>
                   <Field label="Số điện thoại">
                     <input value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} />
@@ -374,11 +371,7 @@ export function StaffOpsAdmin({ initialSnapshot, canManageStaff, staff }: StaffO
                     <input type="email" value={profileForm.email} onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })} />
                   </Field>
                   <Field label="Trạng thái">
-                    <select value={profileForm.employmentStatus} onChange={(event) => setProfileForm({ ...profileForm, employmentStatus: event.target.value as ProfileFormState["employmentStatus"] })}>
-                      <option value="ACTIVE">Đang làm việc</option>
-                      <option value="ON_LEAVE">Nghỉ phép</option>
-                      <option value="TERMINATED">Đã nghỉ việc</option>
-                    </select>
+                    <StyledSelect value={profileForm.employmentStatus} onValueChange={(value) => setProfileForm({ ...profileForm, employmentStatus: value as ProfileFormState["employmentStatus"] })} options={[{ value: "ACTIVE", label: "Đang làm việc" }, { value: "ON_LEAVE", label: "Nghỉ phép" }, { value: "TERMINATED", label: "Đã nghỉ việc" }]} />
                   </Field>
                   <Field label="Lương giờ (VND)">
                     <input type="number" min="0" step="1" value={profileForm.hourlyRateVnd} onChange={(event) => setProfileForm({ ...profileForm, hourlyRateVnd: event.target.value })} />
@@ -401,9 +394,7 @@ export function StaffOpsAdmin({ initialSnapshot, canManageStaff, staff }: StaffO
                 </div>
                 <div className={styles.formGrid}>
                   <Field label="Nhân viên">
-                    <select value={scheduleForm.employeeProfileId} onChange={(event) => setScheduleForm({ ...scheduleForm, employeeProfileId: event.target.value })}>
-                      {snapshot.employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.displayName}</option>)}
-                    </select>
+                    <StyledSelect value={scheduleForm.employeeProfileId} onValueChange={(value) => setScheduleForm({ ...scheduleForm, employeeProfileId: value })} options={snapshot.employees.map((employee) => ({ value: employee.id, label: employee.displayName }))} />
                   </Field>
                   <Field label="Ngày">
                     <input required type="date" value={scheduleForm.scheduleDate} onChange={(event) => setScheduleForm({ ...scheduleForm, scheduleDate: event.target.value })} />
@@ -415,14 +406,10 @@ export function StaffOpsAdmin({ initialSnapshot, canManageStaff, staff }: StaffO
                     <input required type="time" value={scheduleForm.endTime} onChange={(event) => setScheduleForm({ ...scheduleForm, endTime: event.target.value })} />
                   </Field>
                   <Field label="Vai trò">
-                    <select value={scheduleForm.role} onChange={(event) => setScheduleForm({ ...scheduleForm, role: event.target.value as StaffScheduleRole })}>
-                      {scheduleRoles.map((role) => <option key={role} value={role}>{scheduleRoleText(role)}</option>)}
-                    </select>
+                    <StyledSelect value={scheduleForm.role} onValueChange={(value) => setScheduleForm({ ...scheduleForm, role: value as StaffScheduleRole })} options={scheduleRoles.map((role) => ({ value: role, label: scheduleRoleText(role) }))} />
                   </Field>
                   <Field label="Trạng thái">
-                    <select value={scheduleForm.status} onChange={(event) => setScheduleForm({ ...scheduleForm, status: event.target.value as StaffScheduleStatus })}>
-                      {scheduleStatuses.map((status) => <option key={status} value={status}>{scheduleStatusText(status)}</option>)}
-                    </select>
+                    <StyledSelect value={scheduleForm.status} onValueChange={(value) => setScheduleForm({ ...scheduleForm, status: value as StaffScheduleStatus })} options={scheduleStatuses.map((status) => ({ value: status, label: scheduleStatusText(status) }))} />
                   </Field>
                 </div>
                 <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !scheduleForm.employeeProfileId}>
@@ -496,10 +483,7 @@ export function StaffOpsAdmin({ initialSnapshot, canManageStaff, staff }: StaffO
                 ) : null}
               </div>
               <form className={styles.adjustmentForm} onSubmit={createAdjustment}>
-                <select value={adjustmentTimesheetId} onChange={(event) => setAdjustmentTimesheetId(event.target.value)}>
-                  <option value="">Chọn bảng chấm công</option>
-                  {snapshot.timesheets.map((timesheet) => <option key={timesheet.id} value={timesheet.id}>{timesheet.employeeName}</option>)}
-                </select>
+                <StyledSelect value={adjustmentTimesheetId} onValueChange={setAdjustmentTimesheetId} options={[{ value: "", label: "Chọn bảng chấm công" }, ...snapshot.timesheets.map((timesheet) => ({ value: timesheet.id, label: timesheet.employeeName }))]} />
                 <input type="number" value={adjustmentMinutes} onChange={(event) => setAdjustmentMinutes(event.target.value)} />
                 <input required value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} placeholder="Lý do" />
                 <button type="submit" disabled={isSubmitting || !adjustmentTimesheetId}>Điều chỉnh</button>

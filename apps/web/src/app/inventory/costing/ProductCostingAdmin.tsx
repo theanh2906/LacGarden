@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Calculator, Home, Loader2, PackagePlus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import type {
   ProductCostingAdminSnapshot,
   ProductCostTargetDto,
@@ -312,17 +313,15 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                   <div className={styles.ingredientRow} key={row.clientId}>
                     <label className={styles.field}>
                       <span>Nguyên liệu</span>
-                      <select
+                      <StyledSelect
                         required
                         value={row.inventoryItemId}
-                        onChange={(event) => updateIngredientRow(row.clientId, { inventoryItemId: event.target.value })}
-                      >
-                        {activeInventoryItems.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name} · {item.unit} · {formatNullableVnd(item.latestUnitCostVnd)}
-                          </option>
-                        ))}
-                      </select>
+                        onValueChange={(value) => updateIngredientRow(row.clientId, { inventoryItemId: value })}
+                        options={activeInventoryItems.map((item) => ({
+                          value: item.id,
+                          label: `${item.name} · ${item.unit} · ${formatNullableVnd(item.latestUnitCostVnd)}`
+                        }))}
+                      />
                     </label>
                     <label className={styles.field}>
                       <span>Số lượng</span>
