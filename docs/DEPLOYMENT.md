@@ -98,7 +98,7 @@ Screenshots are saved under `docs/assets/qa/`:
 
 1. Use a staging branch or Vercel Preview deployment.
 2. Scope `DATABASE_URL`, `GEMINI_API_KEY`, and payment-related variables to Preview/Staging only.
-3. Run `pnpm db:migrate:deploy` against the staging database before traffic testing.
+3. The Vercel build command runs `pnpm db:migrate:deploy` before the app build. Confirm Preview uses the intended staging database before deploying.
 4. Run `pnpm smoke:pos` against the preview URL.
 5. Capture screenshots with `pnpm screenshots:qa` and review responsive layouts.
 
@@ -106,7 +106,7 @@ Screenshots are saved under `docs/assets/qa/`:
 
 1. Confirm staging smoke tests and screenshots are reviewed.
 2. Verify production env vars are present in Vercel and scoped to Production.
-3. Run `pnpm db:migrate:deploy` against production during the release window.
+3. The Vercel production build applies tracked Prisma migrations before building. Confirm `DATABASE_URL` is scoped to Production and take a backup before a schema-changing release.
 4. Deploy with Vercel Git integration or:
 
 ```bash

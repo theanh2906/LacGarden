@@ -20,11 +20,13 @@ export type StaffPermission =
   | "reports:view"
   | "inventory:manage"
   | "settings:manage"
-  | "payroll:manage";
+  | "payroll:manage"
+  | "dorm:manage";
 
 export type StaffClientPermissions = {
   canManageReports: boolean;
   canManageInventory: boolean;
   canManageSettings: boolean;
   canManagePayroll: boolean;
+  canManageDorm: boolean;
 };

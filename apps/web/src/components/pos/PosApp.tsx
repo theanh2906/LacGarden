@@ -6,6 +6,7 @@ import {
   Bell,
   Bike,
   Banknote,
+  Building2,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -312,6 +313,7 @@ export function PosApp({
         <NavItem icon={Users} label="Nhân sự" href="/staff" />
         <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ manager/owner được xem payroll.")} />
         <NavItem icon={Package} label="Kho" href={permissions.canManageInventory ? "/inventory" : undefined} disabled={!permissions.canManageInventory} onClick={() => setToast("Chỉ manager/owner được quản lý kho.")} />
+        <NavItem icon={Building2} label="Dorm" href={permissions.canManageDorm ? "/dorm" : undefined} disabled={!permissions.canManageDorm} onClick={() => setToast("Chỉ manager/owner được quản lý dorm.")} />
         <NavItem icon={Settings} label="Cài đặt" active={activeView === "Settings"} onClick={() => openRestrictedView("Settings")} disabled={!permissions.canManageSettings} />
       </aside>
 

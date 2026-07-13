@@ -1,0 +1,24 @@
+.page { min-height: 100vh; padding: 28px; color: var(--ink); }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 18px; h1, p { margin: 0; } h1 { color: var(--espresso); font-family: var(--font-display); font-size: 34px; } p { color: var(--muted); font-weight: 750; } }
+.backLink, .panelTitle, .card h2, .metric span, .notice, .primaryButton, .secondaryButton { display: inline-flex; align-items: center; gap: 8px; }
+.backLink { margin-bottom: 8px; color: var(--teal); font-weight: 900; }
+.primaryButton, .secondaryButton { min-height: 40px; border-radius: 8px; padding: 0 12px; font-weight: 900; justify-content: center; }
+.primaryButton { width: 100%; margin-top: 14px; color: white; border: 1px solid var(--teal); background: linear-gradient(180deg, #9d5530, #6f351d); }
+.secondaryButton { color: var(--teal); border: 1px solid var(--line); background: var(--surface); }
+.primaryButton:disabled, .secondaryButton:disabled { cursor: not-allowed; opacity: .62; }
+.metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.metric, .notice, .card, .board, .tablePanel { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 1px 0 rgba(82, 52, 30, .06); }
+.metric { display: grid; gap: 7px; padding: 14px; span { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: uppercase; } strong { color: var(--espresso); font-size: 21px; } small { color: var(--muted); font-weight: 750; } }
+.warnMetric strong, .debt { color: var(--red) !important; font-weight: 900; }
+.notice { min-height: 48px; margin: 0 0 16px; padding: 0 14px; color: var(--teal); font-weight: 850; }
+.forms, .financeGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.financeGrid { margin-top: 16px; }
+.card { padding: 16px; h2 { margin: 0 0 14px; color: var(--espresso); font-size: 16px; } form { display: grid; gap: 11px; } }
+.field { display: grid; gap: 6px; span { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; } input, select { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); padding: 0 10px; font-weight: 750; } }
+.splitFields, .fourFields { display: grid; gap: 10px; }.splitFields { grid-template-columns: repeat(2, minmax(0, 1fr)); }.fourFields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.board { display: grid; gap: 14px; margin-top: 16px; padding: 16px; }.panelTitle { color: var(--espresso); font-weight: 900; }.empty { margin: 0; padding: 14px; color: var(--muted); font-weight: 750; text-align: center; }
+.siteCard { border-top: 1px solid var(--line); padding-top: 14px; h2, p { margin: 0; } h2 { color: var(--espresso); font-size: 17px; } p { margin-top: 3px; color: var(--muted); font-size: 13px; font-weight: 700; } }.roomGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 10px; }.room { display: grid; gap: 3px; padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); > span { color: var(--muted); font-size: 12px; font-weight: 750; } }.beds { display: grid; gap: 6px; margin-top: 6px; }.bed { border-radius: 6px; padding: 7px; font-size: 12px; font-weight: 850; }.bedVACANT { background: #e5ecd8; color: #58622a; }.bedOCCUPIED { background: #f4dfc9; color: #7b3f22; }.bedMAINTENANCE { background: #edd5ce; color: var(--red); }.bedRESERVED { background: #eee1ba; color: #7d5a16; }
+.tablePanel { display: grid; gap: 14px; margin-top: 16px; padding: 16px; overflow: auto; table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: .9rem; } th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; vertical-align: top; } th { color: var(--muted); font-size: .72rem; text-transform: uppercase; } td small { display: block; margin-top: 3px; color: var(--muted); font-weight: 700; } }
+.status { display: inline-block; border-radius: 99px; padding: 4px 8px; font-size: 11px; font-weight: 900; }.statusISSUED { color: #7d5a16; background: #eee1ba; }.statusPARTIAL { color: #7b3f22; background: #f4dfc9; }.statusPAID { color: #58622a; background: #e5ecd8; }.statusDRAFT, .statusVOIDED { color: var(--muted); background: var(--surface-soft); }.spin { animation: spin .8s linear infinite; }@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1100px) { .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .page { padding: 16px; }.header { display: grid; }.metrics, .forms, .financeGrid { grid-template-columns: 1fr; }.fourFields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
