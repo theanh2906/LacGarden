@@ -49,7 +49,14 @@ export function LoginForm() {
       </label>
       <label>
         <span>PIN</span>
-        <input value={pin} onChange={(event) => setPin(event.target.value)} type="password" inputMode="numeric" autoComplete="current-password" />
+        <input
+          value={pin}
+          onChange={(event) => setPin(event.target.value)}
+          type="password"
+          autoComplete="current-password"
+          autoCapitalize="none"
+          spellCheck={false}
+        />
       </label>
       {error ? <p className={styles.error}>{error}</p> : null}
       <button type="submit" disabled={isSubmitting || !username.trim() || pin.trim().length < 4}>
