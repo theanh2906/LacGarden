@@ -52,6 +52,13 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
   }
 
   const busy = pending !== null;
+  const pageCopy = {
+    overview: { title: "Tổng quan", description: "Theo dõi sức chứa, doanh thu và công nợ dorm." },
+    rooms: { title: "Phòng & giường", description: "Tạo cơ sở, phòng và theo dõi trạng thái từng giường." },
+    tenants: { title: "Khách thuê", description: "Quản lý hồ sơ khách thuê và hợp đồng đang hiệu lực." },
+    finance: { title: "Tài chính", description: "Phát hành hóa đơn và ghi nhận tiền thuê đã thu." }
+  }[section];
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -77,18 +84,29 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
           </header>
 
           <div className={styles.content}>
+            <header className={styles.pageHeading}>
+              <div>
+                <h1>{pageCopy.title}</h1>
+                <p>{pageCopy.description}</p>
+              </div>
+            </header>
 
-      <section id="overview" className={styles.metrics}>
-        <Metric icon={<BedDouble size={20} />} label="Lấp đầy" value={`${snapshot.summary.occupancyPercent}%`} detail={`${snapshot.summary.occupiedBeds}/${snapshot.summary.totalBeds} giường`} />
-        <Metric icon={<Home size={20} />} label="Giường trống" value={String(snapshot.summary.vacantBeds)} detail="Sẵn sàng ký hợp đồng" />
-        <Metric icon={<ReceiptText size={20} />} label="Doanh thu tháng" value={currency.format(snapshot.summary.monthRevenueVnd)} detail="Hóa đơn đã phát hành" />
-        <Metric icon={<FileText size={20} />} label="Đã thu tháng" value={currency.format(snapshot.summary.monthCollectedVnd)} detail="Từ các hóa đơn tháng này" />
-        <Metric icon={<Users size={20} />} label="Công nợ" value={currency.format(snapshot.summary.outstandingVnd)} detail="Tất cả hóa đơn chưa tất toán" warn />
-      </section>
+            <p className={styles.notice}>{busy && <Loader2 className={styles.spin} size={17} />} {notice}</p>
 
-      <p className={styles.notice}>{busy && <Loader2 className={styles.spin} size={17} />} {notice}</p>
+      {section === "overview" ? <>
+        <section className={styles.metrics}>
+          <Metric icon={<BedDouble size={20} />} label="Lấp đầy" value={`${snapshot.summary.occupancyPercent}%`} detail={`${snapshot.summary.occupiedBeds}/${snapshot.summary.totalBeds} giường`} />
+          <Metric icon={<Home size={20} />} label="Giường trống" value={String(snapshot.summary.vacantBeds)} detail="Sẵn sàng ký hợp đồng" />
+          <Metric icon={<ReceiptText size={20} />} label="Doanh thu tháng" value={currency.format(snapshot.summary.monthRevenueVnd)} detail="Hóa đơn đã phát hành" />
+          <Metric icon={<FileText size={20} />} label="Đã thu tháng" value={currency.format(snapshot.summary.monthCollectedVnd)} detail="Từ các hóa đơn tháng này" />
+          <Metric icon={<Users size={20} />} label="Công nợ" value={currency.format(snapshot.summary.outstandingVnd)} detail="Tất cả hóa đơn chưa tất toán" warn />
+        </section>
+        <BedBoard snapshot={snapshot} />
+        <InvoiceTable invoices={snapshot.invoices} />
+      </> : null}
 
-      {section === "rooms" ? <section className={styles.forms}>
+      {section === "rooms" ? <>
+        <section className={styles.forms}>
         <FormCard title="1. Thêm cơ sở" icon={<Building2 size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/sites", "site", "Đã thêm cơ sở dorm.")}>
             <Field label="Tên cơ sở"><input name="name" required placeholder="VD: Lac Garden Dorm 1" /></Field>
@@ -105,7 +123,9 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
             <button className={styles.primaryButton} disabled={busy || !snapshot.sites.length}><Plus size={16} /> Tạo phòng</button>
           </form>
         </FormCard>
-      </section> : null}
+        </section>
+        <BedBoard snapshot={snapshot} />
+      </> : null}
 
       {section === "tenants" ? <section className={styles.forms}>
         <FormCard title="3. Thêm khách thuê" icon={<Users size={19} />}>
@@ -127,24 +147,10 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
         </FormCard>
       </section> : null}
 
-      {section === "tenants" ? <section className={styles.tablePanel}>
-        <div className={styles.panelTitle}><Users size={19} /> Danh sách khách thuê</div>
-        <table><thead><tr><th>Khách thuê</th><th>Điện thoại</th><th>CCCD</th><th>Phòng / giường</th><th>Giá thuê</th><th>Ngày vào</th></tr></thead>
-          <tbody>{snapshot.tenants.length ? snapshot.tenants.map((tenant) => <tr key={tenant.id}><td><strong>{tenant.fullName}</strong></td><td>{tenant.phone}</td><td>{tenant.identityNumber ?? "—"}</td><td>{tenant.activeLease?.bedLabel ?? "Chưa xếp giường"}</td><td>{tenant.activeLease ? currency.format(tenant.activeLease.monthlyRentVnd) : "—"}</td><td>{tenant.activeLease?.startDate.slice(0, 10) ?? "—"}</td></tr>) : <tr><td colSpan={6} className={styles.empty}>Chưa có khách thuê nào.</td></tr>}</tbody>
-        </table>
-      </section> : null}
+      {section === "tenants" ? <TenantTable snapshot={snapshot} /> : null}
 
-      {section === "overview" || section === "rooms" ? <section className={styles.board}>
-        <div className={styles.panelTitle}><BedDouble size={19} /> Sơ đồ giường</div>
-        {!snapshot.sites.length ? <p className={styles.empty}>Chưa có cơ sở. Bắt đầu bằng cách thêm cơ sở đầu tiên.</p> : snapshot.sites.map((site) => (
-          <article key={site.id} className={styles.siteCard}>
-            <h2>{site.name}</h2>{site.address && <p>{site.address}</p>}
-            <div className={styles.roomGrid}>{site.rooms.map((room) => <div className={styles.room} key={room.id}><strong>{room.code}</strong><span>{room.name}</span><div className={styles.beds}>{room.beds.map((bed) => <span key={bed.id} className={`${styles.bed} ${styles[`bed${bed.status}`]}`} title={bed.tenantName ?? "Trống"}>{bed.code} {bed.tenantName ? `· ${bed.tenantName}` : "· Trống"}</span>)}</div></div>)}</div>
-          </article>
-        ))}
-      </section> : null}
-
-      {section === "finance" ? <section className={styles.financeGrid}>
+      {section === "finance" ? <>
+        <section className={styles.financeGrid}>
         <FormCard title="5. Phát hành hóa đơn tháng" icon={<ReceiptText size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/invoices", "invoice", "Đã phát hành hóa đơn tiền thuê.")}>
             <Field label="Hợp đồng"><select name="leaseId" required defaultValue=""><option value="" disabled>Chọn hợp đồng đang hiệu lực</option>{snapshot.activeLeases.map((lease) => <option key={lease.id} value={lease.id}>{lease.tenantName} · {lease.bedLabel}</option>)}</select></Field>
@@ -161,14 +167,9 @@ export function DormAdmin({ initialSnapshot, section }: Props) {
             <button className={styles.primaryButton} disabled={busy || !snapshot.invoices.some((invoice) => invoice.balanceVnd > 0)}><ReceiptText size={16} /> Xác nhận thu tiền</button>
           </form>
         </FormCard>
-      </section> : null}
-
-      {section === "overview" || section === "finance" ? <section className={styles.tablePanel}>
-        <div className={styles.panelTitle}><ReceiptText size={19} /> Hóa đơn gần đây</div>
-        <table><thead><tr><th>Mã</th><th>Khách / giường</th><th>Kỳ</th><th>Hạn</th><th>Tổng</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th></tr></thead>
-          <tbody>{snapshot.invoices.length ? snapshot.invoices.map((invoice) => <InvoiceRow key={invoice.id} invoice={invoice} />) : <tr><td colSpan={8} className={styles.empty}>Chưa có hóa đơn nào.</td></tr>}</tbody>
-        </table>
-      </section> : null}
+        </section>
+        <InvoiceTable invoices={snapshot.invoices} />
+      </> : null}
           </div>
 
           <nav className={styles.bottomNav} aria-label="Điều hướng Dorm mobile">
@@ -193,6 +194,36 @@ function Metric({ icon, label, value, detail, warn = false }: { icon: ReactNode;
 
 function FormCard({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return <section className={styles.card}><h2>{icon} {title}</h2>{children}</section>;
+}
+
+function BedBoard({ snapshot }: { snapshot: DormSnapshot }) {
+  return <section className={styles.board}>
+    <div className={styles.panelTitle}><BedDouble size={19} /> Sơ đồ giường</div>
+    {!snapshot.sites.length ? <p className={styles.empty}>Chưa có cơ sở. Bắt đầu bằng cách thêm cơ sở đầu tiên.</p> : snapshot.sites.map((site) => (
+      <article key={site.id} className={styles.siteCard}>
+        <h2>{site.name}</h2>{site.address && <p>{site.address}</p>}
+        <div className={styles.roomGrid}>{site.rooms.map((room) => <div className={styles.room} key={room.id}><strong>{room.code}</strong><span>{room.name}</span><div className={styles.beds}>{room.beds.map((bed) => <span key={bed.id} className={`${styles.bed} ${styles[`bed${bed.status}`]}`} title={bed.tenantName ?? "Trống"}>{bed.code} {bed.tenantName ? `· ${bed.tenantName}` : "· Trống"}</span>)}</div></div>)}</div>
+      </article>
+    ))}
+  </section>;
+}
+
+function TenantTable({ snapshot }: { snapshot: DormSnapshot }) {
+  return <section className={styles.tablePanel}>
+    <div className={styles.panelTitle}><Users size={19} /> Danh sách khách thuê</div>
+    <table><thead><tr><th>Khách thuê</th><th>Điện thoại</th><th>CCCD</th><th>Phòng / giường</th><th>Giá thuê</th><th>Ngày vào</th></tr></thead>
+      <tbody>{snapshot.tenants.length ? snapshot.tenants.map((tenant) => <tr key={tenant.id}><td><strong>{tenant.fullName}</strong></td><td>{tenant.phone}</td><td>{tenant.identityNumber ?? "—"}</td><td>{tenant.activeLease?.bedLabel ?? "Chưa xếp giường"}</td><td>{tenant.activeLease ? currency.format(tenant.activeLease.monthlyRentVnd) : "—"}</td><td>{tenant.activeLease?.startDate.slice(0, 10) ?? "—"}</td></tr>) : <tr><td colSpan={6} className={styles.empty}>Chưa có khách thuê nào.</td></tr>}</tbody>
+    </table>
+  </section>;
+}
+
+function InvoiceTable({ invoices }: { invoices: DormInvoiceDto[] }) {
+  return <section className={styles.tablePanel}>
+    <div className={styles.panelTitle}><ReceiptText size={19} /> Hóa đơn gần đây</div>
+    <table><thead><tr><th>Mã</th><th>Khách / giường</th><th>Kỳ</th><th>Hạn</th><th>Tổng</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th></tr></thead>
+      <tbody>{invoices.length ? invoices.map((invoice) => <InvoiceRow key={invoice.id} invoice={invoice} />) : <tr><td colSpan={8} className={styles.empty}>Chưa có hóa đơn nào.</td></tr>}</tbody>
+    </table>
+  </section>;
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
