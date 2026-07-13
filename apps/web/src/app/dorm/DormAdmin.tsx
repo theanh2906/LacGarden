@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BedDouble, Building2, FileText, Home, Loader2, Plus, ReceiptText, Users } from "lucide-react";
+import { ArrowLeft, BedDouble, Building2, Coffee, FileText, Home, LayoutDashboard, Loader2, Plus, ReceiptText, Users } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import type { DormInvoiceDto, DormPaymentMethod, DormSnapshot } from "@/types/dorm";
 import styles from "./DormAdmin.module.scss";
@@ -52,18 +52,31 @@ export function DormAdmin({ initialSnapshot }: Props) {
   const busy = pending !== null;
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <a className={styles.backLink} href="/"><ArrowLeft size={17} /> Quay lại POS</a>
-          <h1>Quản lý Dorm</h1>
-          <p>Cơ sở, sức chứa, khách thuê, hóa đơn và tiền thuê.</p>
-        </div>
-        <button className={styles.secondaryButton} disabled={busy} onClick={() => void refresh().then(() => setNotice("Đã làm mới dữ liệu dorm.")).catch((error) => setNotice(error.message))}>
-          {pending === "refresh" ? <Loader2 className={styles.spin} size={17} /> : <Home size={17} />} Làm mới
-        </button>
-      </header>
+      <div className={styles.shell}>
+        <aside className={styles.sidebar} aria-label="Điều hướng Dorm">
+          <a className={styles.brandMark} href="/" aria-label="Quay lại POS"><Coffee size={27} /></a>
+          <DormNavItem href="#overview" icon={<LayoutDashboard size={21} />} label="Tổng quan" />
+          <DormNavItem href="#rooms" icon={<BedDouble size={21} />} label="Phòng" />
+          <DormNavItem href="#tenants" icon={<Users size={21} />} label="Khách thuê" />
+          <DormNavItem href="#finance" icon={<ReceiptText size={21} />} label="Tài chính" />
+          <a className={styles.sidebarBack} href="/"><ArrowLeft size={17} /> POS</a>
+        </aside>
 
-      <section className={styles.metrics}>
+        <section className={styles.workspace}>
+          <header className={styles.topbar}>
+            <div className={styles.storeBlock}>
+              <span>LAC GARDEN / DORM</span>
+              <strong>Quản lý Dorm</strong>
+              <small>Cơ sở, sức chứa, khách thuê và dòng tiền</small>
+            </div>
+            <button className={styles.secondaryButton} disabled={busy} onClick={() => void refresh().then(() => setNotice("Đã làm mới dữ liệu dorm.")).catch((error) => setNotice(error.message))}>
+              {pending === "refresh" ? <Loader2 className={styles.spin} size={17} /> : <Home size={17} />} Làm mới
+            </button>
+          </header>
+
+          <div className={styles.content}>
+
+      <section id="overview" className={styles.metrics}>
         <Metric icon={<BedDouble size={20} />} label="Lấp đầy" value={`${snapshot.summary.occupancyPercent}%`} detail={`${snapshot.summary.occupiedBeds}/${snapshot.summary.totalBeds} giường`} />
         <Metric icon={<Home size={20} />} label="Giường trống" value={String(snapshot.summary.vacantBeds)} detail="Sẵn sàng ký hợp đồng" />
         <Metric icon={<ReceiptText size={20} />} label="Doanh thu tháng" value={currency.format(snapshot.summary.monthRevenueVnd)} detail="Hóa đơn đã phát hành" />
@@ -73,7 +86,7 @@ export function DormAdmin({ initialSnapshot }: Props) {
 
       <p className={styles.notice}>{busy && <Loader2 className={styles.spin} size={17} />} {notice}</p>
 
-      <section className={styles.forms}>
+      <section id="tenants" className={styles.forms}>
         <FormCard title="1. Thêm cơ sở" icon={<Building2 size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/sites", "site", "Đã thêm cơ sở dorm.")}>
             <Field label="Tên cơ sở"><input name="name" required placeholder="VD: Lac Garden Dorm 1" /></Field>
@@ -110,7 +123,7 @@ export function DormAdmin({ initialSnapshot }: Props) {
         </FormCard>
       </section>
 
-      <section className={styles.board}>
+      <section id="rooms" className={styles.board}>
         <div className={styles.panelTitle}><BedDouble size={19} /> Sơ đồ giường</div>
         {!snapshot.sites.length ? <p className={styles.empty}>Chưa có cơ sở. Bắt đầu bằng cách thêm cơ sở đầu tiên.</p> : snapshot.sites.map((site) => (
           <article key={site.id} className={styles.siteCard}>
@@ -120,7 +133,7 @@ export function DormAdmin({ initialSnapshot }: Props) {
         ))}
       </section>
 
-      <section className={styles.financeGrid}>
+      <section id="finance" className={styles.financeGrid}>
         <FormCard title="5. Phát hành hóa đơn tháng" icon={<ReceiptText size={19} />}>
           <form onSubmit={(event) => void submit(event, "/api/dorm/invoices", "invoice", "Đã phát hành hóa đơn tiền thuê.")}>
             <Field label="Hợp đồng"><select name="leaseId" required defaultValue=""><option value="" disabled>Chọn hợp đồng đang hiệu lực</option>{snapshot.activeLeases.map((lease) => <option key={lease.id} value={lease.id}>{lease.tenantName} · {lease.bedLabel}</option>)}</select></Field>
@@ -139,14 +152,28 @@ export function DormAdmin({ initialSnapshot }: Props) {
         </FormCard>
       </section>
 
-      <section className={styles.tablePanel}>
+      <section id="invoices" className={styles.tablePanel}>
         <div className={styles.panelTitle}><ReceiptText size={19} /> Hóa đơn gần đây</div>
         <table><thead><tr><th>Mã</th><th>Khách / giường</th><th>Kỳ</th><th>Hạn</th><th>Tổng</th><th>Đã thu</th><th>Còn lại</th><th>Trạng thái</th></tr></thead>
           <tbody>{snapshot.invoices.length ? snapshot.invoices.map((invoice) => <InvoiceRow key={invoice.id} invoice={invoice} />) : <tr><td colSpan={8} className={styles.empty}>Chưa có hóa đơn nào.</td></tr>}</tbody>
         </table>
       </section>
+          </div>
+
+          <nav className={styles.bottomNav} aria-label="Điều hướng Dorm mobile">
+            <DormNavItem href="#overview" icon={<LayoutDashboard size={20} />} label="Tổng quan" />
+            <DormNavItem href="#rooms" icon={<BedDouble size={20} />} label="Phòng" />
+            <DormNavItem href="#tenants" icon={<Users size={20} />} label="Khách thuê" />
+            <DormNavItem href="#finance" icon={<ReceiptText size={20} />} label="Tài chính" />
+          </nav>
+        </section>
+      </div>
     </main>
   );
+}
+
+function DormNavItem({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+  return <a className={styles.navItem} href={href}>{icon}<span>{label}</span></a>;
 }
 
 function Metric({ icon, label, value, detail, warn = false }: { icon: ReactNode; label: string; value: string; detail: string; warn?: boolean }) {
