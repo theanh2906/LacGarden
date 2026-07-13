@@ -7,8 +7,8 @@ import { InventoryAdmin } from "./InventoryAdmin";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Inventory Admin | Lac Garden POS",
-  description: "Desktop inventory management for Lac Garden POS"
+  title: "Quản lý kho | Lac Garden POS",
+  description: "Quản lý kho trên máy tính cho Lac Garden POS"
 };
 
 const emptySnapshot: InventoryAdminSnapshot = {

@@ -101,6 +101,10 @@
   gap: 4px;
 }
 
+.clockPanel > .primaryButton {
+  align-self: end;
+}
+
 .breakInput,
 .field {
   display: grid;

@@ -54,7 +54,7 @@ function toProductCostingErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Product costing input is invalid.",
+          message: "Dữ liệu giá vốn sản phẩm không hợp lệ.",
           details: error.flatten()
         }
       },

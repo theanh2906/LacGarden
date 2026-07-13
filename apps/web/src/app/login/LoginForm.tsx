@@ -44,7 +44,7 @@ export function LoginForm() {
   return (
     <form className={styles.form} onSubmit={submitLogin}>
       <label>
-        <span>Username</span>
+        <span>Tên đăng nhập</span>
         <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoFocus />
       </label>
       <label>

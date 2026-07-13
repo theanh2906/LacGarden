@@ -44,7 +44,7 @@ function toInventoryErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Stock movement input is invalid.",
+          message: "Dữ liệu biến động kho không hợp lệ.",
           details: error.flatten()
         }
       },

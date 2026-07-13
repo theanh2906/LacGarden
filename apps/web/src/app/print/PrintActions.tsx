@@ -6,12 +6,12 @@ import styles from "./Print.module.scss";
 
 export function PrintActions() {
   return (
-    <nav className={styles.actions} aria-label="Print actions">
+    <nav className={styles.actions} aria-label="Thao tác in">
       <Link href="/">
         <ArrowLeft size={16} /> POS
       </Link>
       <button type="button" onClick={() => window.print()}>
-        <Printer size={16} /> Print
+        <Printer size={16} /> In
       </button>
     </nav>
   );

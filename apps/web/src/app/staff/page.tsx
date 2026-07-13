@@ -7,8 +7,8 @@ import { StaffOpsAdmin } from "./StaffOpsAdmin";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Staff Operations | Lac Garden POS",
-  description: "Employee profiles, scheduling, clock-in/out, and timesheet approval"
+  title: "Vận hành nhân sự | Lac Garden POS",
+  description: "Hồ sơ nhân viên, lịch ca, chấm công và duyệt bảng chấm công"
 };
 
 type StaffPageProps = {

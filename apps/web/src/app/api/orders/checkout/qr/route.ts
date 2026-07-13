@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         {
           error: {
             code: "QR_CHECKOUT_COMING_SOON",
-            message: "Thanh toán QR đang Coming soon. Vui lòng dùng tiền mặt hoặc thẻ."
+            message: "Thanh toán QR sắp ra mắt. Vui lòng dùng tiền mặt hoặc thẻ."
           }
         },
         { status: 503 }

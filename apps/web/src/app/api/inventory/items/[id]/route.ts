@@ -29,7 +29,7 @@ function toInventoryErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Inventory item update is invalid.",
+          message: "Dữ liệu cập nhật nguyên liệu không hợp lệ.",
           details: error.flatten()
         }
       },

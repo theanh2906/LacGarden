@@ -55,7 +55,7 @@ export async function authenticateStaff(username: string, pin: string): Promise<
   });
 
   if (!staff || !verifyStaffPin(pin, staff.pinHash)) {
-    throw new AuthError("Username or PIN is incorrect.", 401);
+    throw new AuthError("Tên đăng nhập hoặc mã PIN không đúng.", 401);
   }
 
   await db.user.update({
@@ -129,7 +129,7 @@ export async function getStaffSession(): Promise<StaffSession | null> {
 export async function requireStaffSession(): Promise<StaffSession> {
   const session = await getStaffSession();
   if (!session) {
-    throw new AuthError("Authentication is required.", 401);
+    throw new AuthError("Vui lòng đăng nhập để tiếp tục.", 401);
   }
   return session;
 }
@@ -137,7 +137,7 @@ export async function requireStaffSession(): Promise<StaffSession> {
 export async function requireStaffPermission(permission: StaffPermission): Promise<StaffSession> {
   const session = await requireStaffSession();
   if (!hasStaffPermission(session.staff.role, permission)) {
-    throw new AuthError("You do not have permission to access this resource.", 403);
+    throw new AuthError("Bạn không có quyền truy cập tài nguyên này.", 403);
   }
   return session;
 }

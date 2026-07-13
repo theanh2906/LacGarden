@@ -8,8 +8,8 @@ import styles from "./LoginPage.module.scss";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Staff Login | Lac Garden POS",
-  description: "Staff sign-in for Lac Garden POS"
+  title: "Đăng nhập nhân viên | Lac Garden POS",
+  description: "Đăng nhập nhân viên cho Lac Garden POS"
 };
 
 export default async function LoginPage() {

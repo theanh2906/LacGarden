@@ -8,8 +8,8 @@ import { PayrollAdmin } from "./PayrollAdmin";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Payroll | Lac Garden POS",
-  description: "Payroll calculation, review, and export for approved timesheets"
+  title: "Bảng lương | Lac Garden POS",
+  description: "Tính lương, xét duyệt và xuất dữ liệu từ bảng chấm công đã duyệt"
 };
 
 type PayrollPageProps = {

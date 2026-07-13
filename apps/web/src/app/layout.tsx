@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Lac Garden POS",
-  description: "Database-backed coffee shop POS"
+  description: "Ứng dụng POS quán cà phê kết nối cơ sở dữ liệu"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

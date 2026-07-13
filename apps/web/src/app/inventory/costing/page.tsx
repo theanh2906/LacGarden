@@ -7,8 +7,8 @@ import { ProductCostingAdmin } from "./ProductCostingAdmin";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Product Costing | Lac Garden POS",
-  description: "Recipe, BOM, and gross margin setup for Lac Garden POS"
+  title: "Giá vốn sản phẩm | Lac Garden POS",
+  description: "Thiết lập công thức, BOM và biên lợi nhuận gộp cho Lac Garden POS"
 };
 
 const emptySnapshot: ProductCostingAdminSnapshot = {

@@ -18,8 +18,8 @@ import styles from "./InventoryReports.module.scss";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Inventory Reports | Lac Garden POS",
-  description: "Inventory reports, charts, export, and low-stock alerts for Lac Garden POS"
+  title: "Báo cáo kho | Lac Garden POS",
+  description: "Báo cáo kho, biểu đồ, xuất dữ liệu và cảnh báo tồn thấp của Lac Garden POS"
 };
 
 type InventoryReportsPageProps = {
@@ -50,8 +50,8 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
           <Link className={styles.backLink} href="/inventory">
             <ArrowLeft size={16} /> Quản lý kho
           </Link>
-          <h1>Inventory reports</h1>
-          <p>Báo cáo tồn kho, biến động, chi phí mua hàng và reconciliation theo kỳ.</p>
+          <h1>Báo cáo kho</h1>
+          <p>Báo cáo tồn kho, biến động, chi phí mua hàng và đối soát theo kỳ.</p>
         </div>
         <div className={styles.headerActions}>
           <a className={styles.secondaryButton} href={exportCsvHref}>
@@ -70,7 +70,7 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
             <option value="day">Ngày</option>
             <option value="month">Tháng</option>
             <option value="year">Năm</option>
-            <option value="custom">Custom</option>
+            <option value="custom">Tuỳ chọn</option>
           </select>
         </label>
         <label>
@@ -94,25 +94,25 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
           <input name="endDate" type="date" defaultValue={formValues.endDate} />
         </label>
         <button className={styles.primaryButton} type="submit">
-          Apply
+          Áp dụng
         </button>
       </form>
 
       <section className={styles.periodStrip}>
-        <span>Period</span>
+        <span>Kỳ</span>
         <strong>{report.period.label}</strong>
         <small>
           {formatDate(report.period.startDate)} - {formatDate(addDaysIso(report.period.endDate, -1))}
         </small>
       </section>
 
-      <section className={styles.metrics} aria-label="Inventory report summary">
+      <section className={styles.metrics} aria-label="Tổng quan báo cáo kho">
         <Metric label="Nguyên liệu" value={formatNumber(report.summary.totalItems)} />
         <Metric label="Sắp hết" value={formatNumber(report.summary.lowStockItems)} tone="warn" />
         <Metric label="Hết hàng" value={formatNumber(report.summary.outOfStockItems)} tone="danger" />
         <Metric label="Chi phí mua" value={formatVnd(report.summary.totalPurchaseCostVnd)} />
-        <Metric label="Movements" value={formatNumber(totalMovements(report))} />
-        <Metric label="Invoice attached" value={`${formatNumber(report.summary.attachedInvoiceCount)}/${formatNumber(report.summary.invoiceUploadCount)}`} />
+        <Metric label="Biến động" value={formatNumber(totalMovements(report))} />
+        <Metric label="Hoá đơn đã đính kèm" value={`${formatNumber(report.summary.attachedInvoiceCount)}/${formatNumber(report.summary.invoiceUploadCount)}`} />
       </section>
 
       <section className={styles.dashboardGrid}>
@@ -124,33 +124,33 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
         <section className={styles.panel}>
           <div className={styles.panelTitle}>
             <BarChart3 size={18} />
-            <strong>Purchase cost</strong>
+            <strong>Chi phí mua hàng</strong>
           </div>
           <BarChart buckets={report.purchaseCostBuckets} valueKey="totalCostVnd" formatter={formatCompactVnd} />
         </section>
         <section className={styles.panel}>
           <div className={styles.panelTitle}>
             <TrendingUp size={18} />
-            <strong>Stock change trend</strong>
+            <strong>Xu hướng biến động tồn kho</strong>
           </div>
           <LineChart buckets={report.stockTrendBuckets} />
         </section>
         <section className={styles.panel}>
           <div className={styles.panelTitle}>
             <PieChart size={18} />
-            <strong>Movement breakdown</strong>
+            <strong>Phân loại biến động</strong>
           </div>
           <DonutBreakdown rows={report.movementTypeBreakdown} />
         </section>
       </section>
 
       <section className={styles.twoColumn}>
-        <ReportTable title="Current stock overview" columns={["Nguyên liệu", "Tồn", "Ngưỡng", "Last movement", "Status"]}>
+        <ReportTable title="Tổng quan tồn kho hiện tại" columns={["Nguyên liệu", "Tồn", "Ngưỡng", "Biến động gần nhất", "Trạng thái"]}>
           {report.stockOverview.slice(0, 12).map((item) => (
             <tr key={item.id}>
               <td>
                 <strong>{item.name}</strong>
-                <small>{item.code ?? "No code"}</small>
+                <small>{item.code ?? "Chưa có mã"}</small>
               </td>
               <td>{formatQuantity(item.currentQuantity, item.unit)}</td>
               <td>{formatQuantity(item.lowStockThreshold, item.unit)}</td>
@@ -162,12 +162,12 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
           ))}
         </ReportTable>
 
-        <ReportTable title="Low-stock ingredients" columns={["Nguyên liệu", "Tồn", "Ngưỡng", "Status"]}>
+        <ReportTable title="Nguyên liệu sắp hết" columns={["Nguyên liệu", "Tồn", "Ngưỡng", "Trạng thái"]}>
           {report.lowStockItems.concat(report.outOfStockItems).map((item) => (
             <tr key={item.id}>
               <td>
                 <strong>{item.name}</strong>
-                <small>{item.code ?? "No code"}</small>
+                <small>{item.code ?? "Chưa có mã"}</small>
               </td>
               <td>{formatQuantity(item.currentQuantity, item.unit)}</td>
               <td>{formatQuantity(item.lowStockThreshold, item.unit)}</td>
@@ -180,12 +180,12 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
       </section>
 
       <section className={styles.twoColumn}>
-        <ReportTable title="Top changed ingredients" columns={["Nguyên liệu", "Net", "Changed", "Cost"]}>
+        <ReportTable title="Nguyên liệu biến động nhiều" columns={["Nguyên liệu", "Chênh lệch", "Đã thay đổi", "Chi phí"]}>
           {report.topChangedIngredients.map((item) => (
             <tr key={item.inventoryItemId}>
               <td>
                 <strong>{item.itemName}</strong>
-                <small>{item.movementCount} movements</small>
+                <small>{item.movementCount} biến động</small>
               </td>
               <td>{formatQuantity(item.netQuantityDelta, item.unit)}</td>
               <td>{formatQuantity(item.totalQuantityChanged, item.unit)}</td>
@@ -196,7 +196,7 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
       </section>
 
       <section className={styles.twoColumn}>
-        <ReportTable title="Recent stock movements" columns={["Time", "Nguyên liệu", "Type", "Delta", "Cost"]}>
+        <ReportTable title="Biến động kho gần đây" columns={["Thời gian", "Nguyên liệu", "Loại", "Chênh lệch", "Chi phí"]}>
           {report.recentMovements.map((movement) => (
             <tr key={movement.id}>
               <td>{formatDateTime(movement.createdAt)}</td>
@@ -208,7 +208,7 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
           ))}
         </ReportTable>
 
-        <ReportTable title="Invoice/import reconciliation" columns={["Time", "File", "Type", "Status"]}>
+        <ReportTable title="Đối soát hoá đơn/nhập dữ liệu" columns={["Thời gian", "Tệp", "Loại", "Trạng thái"]}>
           {report.reconciliation.latestUploads.map((upload) => (
             <tr key={upload.id}>
               <td>{formatDateTime(upload.createdAt)}</td>
@@ -216,8 +216,8 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
                 <strong>{upload.originalFileName}</strong>
                 <small>{formatFileSize(upload.fileSize)}</small>
               </td>
-              <td>{upload.uploadType}</td>
-              <td>{upload.status}</td>
+              <td>{uploadTypeLabel(upload.uploadType)}</td>
+              <td>{uploadStatusLabel(upload.status)}</td>
             </tr>
           ))}
           {report.reconciliation.latestImportBatches.map((batch) => (
@@ -226,11 +226,11 @@ export default async function InventoryReportsPage({ searchParams }: InventoryRe
               <td>
                 <strong>{batch.upload.originalFileName}</strong>
                 <small>
-                  {batch.validRowCount} valid · {batch.invalidRowCount} invalid
+                  {batch.validRowCount} hợp lệ · {batch.invalidRowCount} không hợp lệ
                 </small>
               </td>
-              <td>{batch.parserUsed}</td>
-              <td>{batch.status}</td>
+              <td>{parserUsedLabel(batch.parserUsed)}</td>
+              <td>{importBatchStatusLabel(batch.status)}</td>
             </tr>
           ))}
         </ReportTable>
@@ -310,13 +310,13 @@ function LineChart({ buckets }: { buckets: InventoryReportBucketDto[] }) {
 
   return (
     <div className={styles.lineChart}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Stock change trend">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Xu hướng biến động tồn kho">
         <path d="M0 90 H100" />
         <polyline points={points.join(" ")} />
       </svg>
       <div className={styles.chartLegend}>
         <span>{buckets[0]?.label ?? "-"}</span>
-        <strong>Net {formatNumber(values.reduce((total, value) => total + value, 0))}</strong>
+        <strong>Ròng {formatNumber(values.reduce((total, value) => total + value, 0))}</strong>
         <span>{buckets[buckets.length - 1]?.label ?? "-"}</span>
       </div>
     </div>
@@ -340,7 +340,7 @@ function DonutBreakdown({ rows }: { rows: InventoryMovementTypeSummaryDto[] }) {
     <div className={styles.donutWrap}>
       <div className={styles.donut} style={{ "--donut": total ? gradient : "#ead9bf 0% 100%" } as CSSProperties}>
         <strong>{formatNumber(total)}</strong>
-        <span>moves</span>
+        <span>biến động</span>
       </div>
       <div className={styles.breakdownList}>
         {rows.map((row, index) => (
@@ -413,6 +413,40 @@ function movementLabel(type: InventoryStockMovementDto["movementType"]) {
     CORRECTION: "Kiểm kho"
   };
   return labels[type];
+}
+
+function uploadTypeLabel(type: string) {
+  const labels: Record<string, string> = { INVOICE: "Hoá đơn", IMPORT: "Nhập dữ liệu" };
+  return labels[type] ?? type;
+}
+
+function uploadStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    STORED: "Đã lưu",
+    PARSED: "Đã phân tích",
+    ATTACHED: "Đã đính kèm",
+    FAILED: "Thất bại"
+  };
+  return labels[status] ?? status;
+}
+
+function parserUsedLabel(parser: string) {
+  const labels: Record<string, string> = {
+    DETERMINISTIC: "Quy tắc cố định",
+    GEMINI: "Gemini",
+    MIXED: "Kết hợp"
+  };
+  return labels[parser] ?? parser;
+}
+
+function importBatchStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    DRAFT: "Bản nháp",
+    PARSED: "Đã phân tích",
+    CONFIRMED: "Đã xác nhận",
+    FAILED: "Thất bại"
+  };
+  return labels[status] ?? status;
 }
 
 function addDaysIso(value: string, days: number) {

@@ -59,7 +59,7 @@ export class ProductCostingServiceError extends Error {
 
 export function getProductCostingErrorMessage(error: unknown) {
   if (error instanceof ProductCostingServiceError) return error.message;
-  return "Product costing operation failed. Check admin logs for details.";
+  return "Thao tác giá vốn sản phẩm thất bại. Kiểm tra nhật ký quản trị để biết chi tiết.";
 }
 
 export async function getProductCostingAdminSnapshot(): Promise<ProductCostingAdminSnapshot> {
@@ -160,7 +160,7 @@ export async function upsertProductRecipe(input: UpsertProductRecipeInput): Prom
         }
       });
       if (existingCount !== inventoryItemIds.length) {
-        throw new ProductCostingServiceError("Recipe contains an inactive or missing inventory item.");
+        throw new ProductCostingServiceError("Công thức chứa nguyên liệu không còn hoạt động hoặc không tồn tại.");
       }
 
       await tx.productRecipeIngredient.createMany({

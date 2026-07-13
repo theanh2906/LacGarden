@@ -17,7 +17,7 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
   const [adjustmentType, setAdjustmentType] = useState<PayrollAdjustmentType>("BONUS");
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
-  const [notice, setNotice] = useState("Payroll ready.");
+  const [notice, setNotice] = useState("Bảng lương sẵn sàng.");
   const [pendingOperation, setPendingOperation] = useState<PendingOperation>(null);
 
   const run = snapshot.run;
@@ -34,11 +34,11 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
         body: JSON.stringify({ startDate, endDate })
       });
       const payload = (await response.json()) as { data?: PayrollRunDto; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không generate được payroll.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không thể tạo bảng lương.");
       applyRun(payload.data, payload.data.lines.length);
-      setNotice(`Đã generate payroll ${payload.data.period.label}.`);
+      setNotice(`Đã tạo bảng lương ${payload.data.period.label}.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Không generate được payroll.");
+      setNotice(error instanceof Error ? error.message : "Không thể tạo bảng lương.");
     } finally {
       setPendingOperation(null);
     }
@@ -54,11 +54,11 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
         body: JSON.stringify({ runId: run.id, action })
       });
       const payload = (await response.json()) as { data?: PayrollRunDto; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không review được payroll.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không thể xét duyệt bảng lương.");
       applyRun(payload.data);
-      setNotice(`Payroll status: ${payload.data.status}.`);
+      setNotice(`Trạng thái bảng lương: ${payrollStatusText(payload.data.status)}.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Không review được payroll.");
+      setNotice(error instanceof Error ? error.message : "Không thể xét duyệt bảng lương.");
     } finally {
       setPendingOperation(null);
     }
@@ -80,13 +80,13 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
         })
       });
       const payload = (await response.json()) as { data?: PayrollRunDto; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không ghi được adjustment.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không thể ghi điều chỉnh.");
       applyRun(payload.data);
       setAdjustmentAmount("");
       setAdjustmentReason("");
-      setNotice("Đã ghi payroll adjustment.");
+      setNotice("Đã ghi điều chỉnh lương.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Không ghi được adjustment.");
+      setNotice(error instanceof Error ? error.message : "Không thể ghi điều chỉnh.");
     } finally {
       setPendingOperation(null);
     }
@@ -111,8 +111,8 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
           <Link className={styles.backLink} href="/">
             <ArrowLeft size={16} /> POS
           </Link>
-          <h1>Payroll</h1>
-          <p>Approved timesheets, salary calculation, review, and accounting export.</p>
+          <h1>Bảng lương</h1>
+          <p>Bảng chấm công đã duyệt, tính lương, xét duyệt và xuất dữ liệu kế toán.</p>
         </div>
         <div className={styles.headerActions}>
           <a className={styles.secondaryButton} href={buildExportHref(snapshot, "csv")}>
@@ -135,7 +135,7 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
         </label>
         <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
           {pendingOperation === "generate" ? <Loader2 className={styles.spinnerIcon} size={17} /> : <RefreshCw size={17} />}
-          Generate payroll
+          Tạo bảng lương
         </button>
       </form>
 
@@ -145,53 +145,53 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
       </section>
 
       <section className={styles.periodStrip}>
-        <span>Period</span>
+        <span>Kỳ</span>
         <strong>{snapshot.period.label}</strong>
         <small>
-          Approved timesheets: {snapshot.approvedTimesheetCount} · Missing from run: {snapshot.missingApprovedTimesheetCount} · Status: {run?.status ?? "NOT_GENERATED"}
+          Bảng chấm công đã duyệt: {snapshot.approvedTimesheetCount} · Chưa có trong đợt lương: {snapshot.missingApprovedTimesheetCount} · Trạng thái: {run ? payrollStatusText(run.status) : "Chưa tạo"}
         </small>
       </section>
 
       <section className={styles.metrics}>
-        <Metric label="Employees" value={String(snapshot.summary.employeeCount)} />
-        <Metric label="Approved hours" value={formatHours(snapshot.summary.approvedWorkedMinutes)} />
-        <Metric label="OT hours" value={formatHours(snapshot.summary.overtimeMinutes)} />
-        <Metric label="Gross" value={formatVnd(snapshot.summary.grossPayVnd)} />
-        <Metric label="Deductions" value={formatVnd(snapshot.summary.deductionVnd)} tone={snapshot.summary.deductionVnd ? "warn" : undefined} />
-        <Metric label="Net pay" value={formatVnd(snapshot.summary.netPayVnd)} tone="strong" />
+        <Metric label="Nhân viên" value={String(snapshot.summary.employeeCount)} />
+        <Metric label="Giờ đã duyệt" value={formatHours(snapshot.summary.approvedWorkedMinutes)} />
+        <Metric label="Giờ tăng ca" value={formatHours(snapshot.summary.overtimeMinutes)} />
+        <Metric label="Lương trước khấu trừ" value={formatVnd(snapshot.summary.grossPayVnd)} />
+        <Metric label="Khấu trừ" value={formatVnd(snapshot.summary.deductionVnd)} tone={snapshot.summary.deductionVnd ? "warn" : undefined} />
+        <Metric label="Thực nhận" value={formatVnd(snapshot.summary.netPayVnd)} tone="strong" />
       </section>
 
       <section className={styles.actionPanel}>
         <div>
-          <strong>Review workflow</strong>
-          <small>Generate from approved timesheets, mark reviewed, then approve for accounting export.</small>
+          <strong>Quy trình xét duyệt</strong>
+          <small>Tạo từ bảng chấm công đã duyệt, đánh dấu đã rà soát, sau đó duyệt để xuất kế toán.</small>
         </div>
         <div className={styles.actionRow}>
           <button type="button" onClick={() => reviewRun("mark_reviewed")} disabled={isSubmitting || !run || isApproved}>
-            <CheckCircle2 size={16} /> Mark reviewed
+            <CheckCircle2 size={16} /> Đánh dấu đã rà soát
           </button>
           <button type="button" onClick={() => reviewRun("approve")} disabled={isSubmitting || !run || isApproved}>
-            <CheckCircle2 size={16} /> Approve
+            <CheckCircle2 size={16} /> Duyệt
           </button>
           <button type="button" onClick={() => reviewRun("reopen")} disabled={isSubmitting || !run}>
-            <RotateCcw size={16} /> Reopen
+            <RotateCcw size={16} /> Mở lại
           </button>
         </div>
       </section>
 
       <section className={styles.tablePanel}>
         <div className={styles.panelTitle}>
-          <strong>Payroll lines</strong>
+          <strong>Chi tiết lương</strong>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Employee</th>
-              <th>Hours</th>
-              <th>Rates</th>
-              <th>Pay</th>
-              <th>Adjustments</th>
-              <th>Net</th>
+              <th>Nhân viên</th>
+              <th>Giờ làm</th>
+              <th>Đơn giá</th>
+              <th>Lương</th>
+              <th>Điều chỉnh</th>
+              <th>Thực nhận</th>
             </tr>
           </thead>
           <tbody>
@@ -199,72 +199,72 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
               <tr key={line.id}>
                 <td>
                   <strong>{line.employeeName}</strong>
-                  <small>{line.employeeCode ?? "No code"} · {line.scheduleRole}</small>
+                  <small>{line.employeeCode ?? "Chưa có mã"} · {scheduleRoleText(line.scheduleRole)}</small>
                 </td>
                 <td>
                   <strong>{formatHours(line.approvedWorkedMinutes)}</strong>
-                  <small>Regular {formatHours(line.regularMinutes)} · OT {formatHours(line.overtimeMinutes)}</small>
+                  <small>Giờ thường {formatHours(line.regularMinutes)} · Tăng ca {formatHours(line.overtimeMinutes)}</small>
                 </td>
                 <td>
-                  <strong>{line.hourlyRateVnd ? `${formatVnd(line.hourlyRateVnd)}/h` : "No hourly"}</strong>
-                  <small>Fixed {line.fixedSalaryVnd ? formatVnd(line.fixedSalaryVnd) : "-"} · OT x{line.overtimeMultiplier}</small>
+                  <strong>{line.hourlyRateVnd ? `${formatVnd(line.hourlyRateVnd)}/giờ` : "Chưa có lương giờ"}</strong>
+                  <small>Cố định {line.fixedSalaryVnd ? formatVnd(line.fixedSalaryVnd) : "-"} · Tăng ca x{line.overtimeMultiplier}</small>
                 </td>
                 <td>
                   <strong>{formatVnd(line.grossPayVnd)}</strong>
-                  <small>Regular {formatVnd(line.regularPayVnd)} · Fixed {formatVnd(line.fixedPayVnd)} · OT {formatVnd(line.overtimePayVnd)}</small>
+                  <small>Thường {formatVnd(line.regularPayVnd)} · Cố định {formatVnd(line.fixedPayVnd)} · Tăng ca {formatVnd(line.overtimePayVnd)}</small>
                 </td>
                 <td>
                   <strong>+{formatVnd(line.bonusVnd)} / -{formatVnd(line.deductionVnd)}</strong>
-                  <small>{line.adjustments.length ? `${line.adjustments.length} adjustment(s)` : "No adjustments"}</small>
+                  <small>{line.adjustments.length ? `${line.adjustments.length} điều chỉnh` : "Chưa có điều chỉnh"}</small>
                 </td>
                 <td>
                   <strong>{formatVnd(line.netPayVnd)}</strong>
-                  <small>{line.calculationNotes[0] ?? "Approved timesheet only"}</small>
+                  <small>{line.calculationNotes[0] ?? "Chỉ tính từ bảng chấm công đã duyệt"}</small>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!run?.lines.length ? <p className={styles.emptyState}>Chưa có payroll run cho kỳ này.</p> : null}
+        {!run?.lines.length ? <p className={styles.emptyState}>Chưa có đợt lương cho kỳ này.</p> : null}
       </section>
 
       <section className={styles.twoColumn}>
         <form className={styles.card} onSubmit={createAdjustment}>
           <div className={styles.panelTitle}>
             <Plus size={18} />
-            <strong>Bonus / deduction</strong>
+            <strong>Thưởng / khấu trừ</strong>
           </div>
           <label className={styles.field}>
-            <span>Line</span>
+            <span>Nhân viên</span>
             <select value={adjustmentLineId} onChange={(event) => setAdjustmentLineId(event.target.value)} disabled={!run || isApproved}>
               <option value="">Chọn nhân sự</option>
               {run?.lines.map((line) => <option key={line.id} value={line.id}>{line.employeeName}</option>)}
             </select>
           </label>
           <label className={styles.field}>
-            <span>Type</span>
+            <span>Loại</span>
             <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value as PayrollAdjustmentType)} disabled={isApproved}>
-              <option value="BONUS">BONUS</option>
-              <option value="DEDUCTION">DEDUCTION</option>
+              <option value="BONUS">Thưởng</option>
+              <option value="DEDUCTION">Khấu trừ</option>
             </select>
           </label>
           <label className={styles.field}>
-            <span>Amount VND</span>
+            <span>Số tiền (VND)</span>
             <input type="number" min="1" value={adjustmentAmount} onChange={(event) => setAdjustmentAmount(event.target.value)} disabled={isApproved} />
           </label>
           <label className={styles.field}>
-            <span>Reason</span>
+            <span>Lý do</span>
             <input value={adjustmentReason} onChange={(event) => setAdjustmentReason(event.target.value)} disabled={isApproved} />
           </label>
           <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !adjustmentLineId || isApproved}>
             {pendingOperation === "adjustment" ? <Loader2 className={styles.spinnerIcon} size={17} /> : <Plus size={17} />}
-            Add adjustment
+            Thêm điều chỉnh
           </button>
         </form>
 
         <section className={styles.card}>
           <div className={styles.panelTitle}>
-            <strong>Audit notes</strong>
+            <strong>Ghi chú kiểm tra</strong>
           </div>
           <div className={styles.auditList}>
             {run?.lines.flatMap((line) => line.calculationNotes.map((note, index) => ({ id: `${line.id}-${index}`, employeeName: line.employeeName, note }))).map((item) => (
@@ -273,7 +273,7 @@ export function PayrollAdmin({ initialSnapshot }: { initialSnapshot: PayrollSnap
                 <span>{item.note}</span>
               </article>
             ))}
-            {!run?.lines.length ? <p className={styles.emptyState}>Generate payroll để xem calculation notes.</p> : null}
+            {!run?.lines.length ? <p className={styles.emptyState}>Tạo bảng lương để xem ghi chú tính toán.</p> : null}
           </div>
         </section>
       </section>
@@ -316,6 +316,25 @@ function buildExportHref(snapshot: PayrollSnapshotDto, format: "csv" | "xlsx") {
 
 function formatHours(minutes: number) {
   return `${Math.round((minutes / 60) * 100) / 100}h`;
+}
+
+function payrollStatusText(status: PayrollRunDto["status"]) {
+  const labels: Record<PayrollRunDto["status"], string> = {
+    DRAFT: "Bản nháp",
+    REVIEWED: "Đã rà soát",
+    APPROVED: "Đã duyệt"
+  };
+  return labels[status];
+}
+
+function scheduleRoleText(role: string) {
+  const labels: Record<string, string> = {
+    BAR: "Pha chế",
+    CASHIER: "Thu ngân",
+    SERVICE: "Phục vụ",
+    MANAGER: "Quản lý"
+  };
+  return labels[role] ?? role;
 }
 
 function parseInteger(value: string) {

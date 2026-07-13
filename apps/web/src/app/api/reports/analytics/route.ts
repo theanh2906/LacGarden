@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         {
           error: {
             code: "VALIDATION_ERROR",
-            message: "Report filters are invalid.",
+            message: "Bộ lọc báo cáo không hợp lệ.",
             details: error.flatten()
           }
         },
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(
-      { error: { code: "SALES_REPORT_ERROR", message: "Unable to load sales analytics report. Check admin logs for details." } },
+      { error: { code: "SALES_REPORT_ERROR", message: "Không thể tải báo cáo phân tích bán hàng. Kiểm tra nhật ký quản trị để biết chi tiết." } },
       { status: 400 }
     );
   }

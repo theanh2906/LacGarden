@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     console.info("[sales-reports-api] Sales report export failed", error);
     return Response.json(
-      { error: { code: "SALES_REPORT_EXPORT_ERROR", message: "Unable to export sales report. Check admin logs for details." } },
+      { error: { code: "SALES_REPORT_EXPORT_ERROR", message: "Không thể xuất báo cáo bán hàng. Kiểm tra nhật ký quản trị để biết chi tiết." } },
       { status: 400 }
     );
   }

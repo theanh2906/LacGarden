@@ -89,10 +89,10 @@ const operationLabels: Record<InventoryOperation, string> = {
   updateItem: "Đang cập nhật nguyên liệu...",
   toggleItem: "Đang đổi trạng thái nguyên liệu...",
   createMovement: "Đang ghi biến động kho...",
-  parseImport: "Đang upload và parse file...",
-  saveImport: "Đang lưu chỉnh sửa import...",
-  confirmImport: "Đang confirm import...",
-  uploadInvoice: "Đang upload hóa đơn..."
+  parseImport: "Đang tải lên và phân tích tệp...",
+  saveImport: "Đang lưu chỉnh sửa nhập dữ liệu...",
+  confirmImport: "Đang xác nhận nhập dữ liệu...",
+  uploadInvoice: "Đang tải lên hoá đơn..."
 };
 
 const defaultItemForm: ItemFormState = {
@@ -127,7 +127,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
   const [itemForm, setItemForm] = useState(defaultItemForm);
   const [editForm, setEditForm] = useState<ItemFormState>(() => toItemForm(initialSnapshot.items[0]));
   const [movementForm, setMovementForm] = useState(defaultMovementForm);
-  const [notice, setNotice] = useState("Inventory foundation is ready for admin data entry.");
+  const [notice, setNotice] = useState("Kho hàng đã sẵn sàng để nhập liệu quản trị.");
   const [pendingOperation, setPendingOperation] = useState<InventoryOperation | null>(null);
   const [importBatch, setImportBatch] = useState<InventoryImportBatchDto | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -307,7 +307,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
         body: formData
       });
       const payload = (await response.json()) as { data?: { batch?: InventoryImportBatchDto | null }; error?: { message: string } };
-      if (!response.ok || !payload.data?.batch) throw new Error(payload.error?.message ?? "Import parse failed.");
+      if (!response.ok || !payload.data?.batch) throw new Error(payload.error?.message ?? "Không thể phân tích tệp nhập.");
       setImportBatch(payload.data.batch);
       setNotice(`Đã parse ${payload.data.batch.rowCount} dòng từ ${payload.data.batch.upload.originalFileName}`);
     } catch (error) {
@@ -338,7 +338,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
         })
       });
       const payload = (await response.json()) as { data?: InventoryImportBatchDto; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Import row update failed.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không thể cập nhật dòng nhập.");
       setImportBatch(payload.data);
       setNotice(`Đã lưu chỉnh sửa import: ${payload.data.validRowCount} dòng hợp lệ`);
     } catch (error) {
@@ -358,7 +358,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
         body: JSON.stringify({})
       });
       const payload = (await response.json()) as { data?: InventoryImportConfirmResultDto; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Import confirm failed.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không thể xác nhận nhập dữ liệu.");
       setImportBatch(payload.data.batch);
       await refreshItems().catch((error) => logInventoryAdminError("Failed to refresh after import confirmation", error));
       setNotice(`Đã confirm import: tạo ${payload.data.createdItemCount} nguyên liệu, ${payload.data.movementCount} movement`);
@@ -382,7 +382,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
         body: formData
       });
       const payload = (await response.json()) as { data?: { upload: { id: string; originalFileName: string } }; error?: { message: string } };
-      if (!response.ok || !payload.data?.upload) throw new Error(payload.error?.message ?? "Invoice upload failed.");
+      if (!response.ok || !payload.data?.upload) throw new Error(payload.error?.message ?? "Không thể tải lên hoá đơn.");
 
       if (invoiceMovementId) {
         const attachResponse = await fetch(`/api/inventory/uploads/${payload.data.upload.id}/invoice-attachments`, {
@@ -391,12 +391,12 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
           body: JSON.stringify({ stockMovementId: invoiceMovementId })
         });
         const attachPayload = (await attachResponse.json()) as { error?: { message: string } };
-        if (!attachResponse.ok) throw new Error(attachPayload.error?.message ?? "Invoice attachment failed.");
+        if (!attachResponse.ok) throw new Error(attachPayload.error?.message ?? "Không thể đính kèm hoá đơn.");
       }
 
       setInvoiceFile(null);
       setInvoiceMovementId("");
-      setNotice(invoiceMovementId ? "Đã upload và attach hóa đơn vào movement nhập mua" : "Đã upload hóa đơn để lưu reconciliation");
+      setNotice(invoiceMovementId ? "Đã tải lên và đính kèm hoá đơn vào phiếu nhập mua" : "Đã tải lên hoá đơn để đối soát");
     } catch (error) {
       logInventoryAdminError("Failed to upload invoice", error);
     } finally {
@@ -463,10 +463,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 <Upload size={18} />
               </span>
               <span className={styles.filePickerText}>
-                <strong>{importFile ? importFile.name : "Chọn file import"}</strong>
+                <strong>{importFile ? importFile.name : "Chọn tệp nhập dữ liệu"}</strong>
                 <small>{importFile ? formatFileSize(importFile.size) : "Excel, TXT hoặc CSV"}</small>
               </span>
-              <span className={styles.filePickerAction}>Browse</span>
+              <span className={styles.filePickerAction}>Chọn tệp</span>
             </label>
             <input
               className={styles.hiddenFileInput}
@@ -477,7 +477,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
             />
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !importFile}>
-              <ButtonContent loading={pendingOperation === "parseImport"} label="Parse file" loadingLabel="Đang parse..." />
+              <ButtonContent loading={pendingOperation === "parseImport"} label="Phân tích tệp" loadingLabel="Đang phân tích..." />
             </button>
           </div>
           <small className={styles.helperText}>
@@ -496,10 +496,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 <FileText size={18} />
               </span>
               <span className={styles.filePickerText}>
-                <strong>{invoiceFile ? invoiceFile.name : "Chọn file hóa đơn"}</strong>
+                <strong>{invoiceFile ? invoiceFile.name : "Chọn tệp hoá đơn"}</strong>
                 <small>{invoiceFile ? formatFileSize(invoiceFile.size) : "PDF, ảnh hoặc file scan"}</small>
               </span>
-              <span className={styles.filePickerAction}>Browse</span>
+              <span className={styles.filePickerAction}>Chọn tệp</span>
             </label>
             <input
               className={styles.hiddenFileInput}
@@ -517,7 +517,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               ))}
             </select>
             <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !invoiceFile}>
-              <ButtonContent loading={pendingOperation === "uploadInvoice"} label="Upload" loadingLabel="Đang upload..." />
+              <ButtonContent loading={pendingOperation === "uploadInvoice"} label="Tải lên" loadingLabel="Đang tải lên..." />
             </button>
           </div>
           <small className={styles.helperText}>File hóa đơn lưu trên filesystem local và metadata giữ trong database để reconciliation.</small>
@@ -546,7 +546,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                 onClick={confirmImport}
                 disabled={isSubmitting || importBatch.invalidRowCount > 0 || importBatch.status === "CONFIRMED"}
               >
-                <ButtonContent loading={pendingOperation === "confirmImport"} label="Confirm import" loadingLabel="Đang confirm..." />
+                <ButtonContent loading={pendingOperation === "confirmImport"} label="Xác nhận nhập" loadingLabel="Đang xác nhận..." />
               </button>
             </div>
           </div>
@@ -554,12 +554,12 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
             <div className={styles.importHeader}>
               <span>#</span>
               <span>Tên</span>
-              <span>Unit</span>
-              <span>Qty</span>
-              <span>Unit cost</span>
-              <span>Total</span>
+              <span>Đơn vị</span>
+              <span>Số lượng</span>
+              <span>Đơn giá</span>
+              <span>Tổng tiền</span>
               <span>Ngày mua</span>
-              <span>Status</span>
+              <span>Trạng thái</span>
             </div>
             {importBatch.rows.map((row) => (
               <div className={styles.importRow} key={row.id}>
@@ -593,10 +593,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                   onChange={(event) => updateImportRow(row.id, { purchaseDate: event.target.value ? toIsoDate(event.target.value) : null })}
                 />
                 <span className={`${styles.badge} ${row.validationStatus === "INVALID" ? styles.badge_OUT_OF_STOCK : styles.badge_OK}`}>
-                  {row.validationStatus}
+                  {importRowStatusLabel(row.validationStatus)}
                 </span>
                 {row.validationErrors.length ? <p className={styles.rowError}>{row.validationErrors.join("; ")}</p> : null}
-                {row.matchedInventoryItemName ? <p className={styles.rowWarning}>Matched: {row.matchedInventoryItemName}</p> : null}
+                {row.matchedInventoryItemName ? <p className={styles.rowWarning}>Khớp với: {row.matchedInventoryItemName}</p> : null}
               </div>
             ))}
           </div>
@@ -608,7 +608,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
           <div className={styles.toolbar}>
             <label className={styles.searchBox}>
               <Search size={17} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên, code, unit" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên, mã, đơn vị" />
             </label>
             <div className={styles.filterTabs} aria-label="Lọc tồn kho">
               {statusFilters.map((filter) => (
@@ -641,7 +641,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               >
                 <span>
                   <strong>{item.name}</strong>
-                  <small>{item.code ?? "Không có code"} · {item.unit}</small>
+                  <small>{item.code ?? "Chưa có mã"} · {item.unit}</small>
                 </span>
                 <strong>{formatQuantity(item.currentQuantity, item.unit)}</strong>
                 <span>{formatQuantity(item.lowStockThreshold, item.unit)}</span>
@@ -660,10 +660,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
               <Field label="Tên">
                 <input required value={itemForm.name} onChange={(event) => setItemForm({ ...itemForm, name: event.target.value })} />
               </Field>
-              <Field label="Code">
+              <Field label="Mã">
                 <input value={itemForm.code} onChange={(event) => setItemForm({ ...itemForm, code: event.target.value })} />
               </Field>
-              <Field label="Unit">
+              <Field label="Đơn vị">
                 <input required value={itemForm.unit} onChange={(event) => setItemForm({ ...itemForm, unit: event.target.value })} />
               </Field>
               <Field label="Tồn đầu">
@@ -709,10 +709,10 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                     <Field label="Tên">
                       <input required value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} />
                     </Field>
-                    <Field label="Code">
+                    <Field label="Mã">
                       <input value={editForm.code} onChange={(event) => setEditForm({ ...editForm, code: event.target.value })} />
                     </Field>
-                    <Field label="Unit">
+                    <Field label="Đơn vị">
                       <input required value={editForm.unit} onChange={(event) => setEditForm({ ...editForm, unit: event.target.value })} />
                     </Field>
                     <Field label="Tồn hiện tại">
@@ -780,7 +780,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                         />
                       </Field>
                     ) : movementForm.movementType === "ADJUSTMENT" ? (
-                      <Field label="Delta (+/-)">
+                      <Field label="Chênh lệch (+/-)">
                         <input
                           required
                           type="number"
@@ -836,7 +836,7 @@ export function InventoryAdmin({ initialSnapshot }: InventoryAdminProps) {
                     </Field>
                   </div>
                   <button className={`${styles.primaryButton} ${styles.formSubmitButton}`} type="submit" disabled={isSubmitting || !selectedItem.isActive}>
-                    <ButtonContent loading={pendingOperation === "createMovement"} icon={<Plus size={17} />} label="Ghi movement" loadingLabel="Đang ghi..." />
+                    <ButtonContent loading={pendingOperation === "createMovement"} icon={<Plus size={17} />} label="Ghi biến động" loadingLabel="Đang ghi..." />
                   </button>
                 </form>
               </section>
@@ -1055,6 +1055,17 @@ function movementLabel(type: InventoryStockMovementType) {
     CORRECTION: "Kiểm kho"
   };
   return labels[type];
+}
+
+function importRowStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    VALID: "Hợp lệ",
+    INVALID: "Không hợp lệ",
+    WARNING: "Cần xem xét",
+    CONFIRMED: "Đã xác nhận",
+    SKIPPED: "Đã bỏ qua"
+  };
+  return labels[status] ?? status;
 }
 
 function formatQuantity(quantity: number, unit: string) {

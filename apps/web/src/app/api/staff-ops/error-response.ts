@@ -14,7 +14,7 @@ export function toStaffOpsErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Staff operation input is invalid.",
+          message: "Dữ liệu thao tác nhân sự không hợp lệ.",
           details: error.flatten()
         }
       },

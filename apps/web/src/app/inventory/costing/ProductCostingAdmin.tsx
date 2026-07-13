@@ -24,9 +24,9 @@ type IngredientFormRow = {
 type PendingOperation = "refresh" | "saveRecipe" | "saveRule";
 
 const operationLabels: Record<PendingOperation, string> = {
-  refresh: "Đang làm mới costing...",
-  saveRecipe: "Đang lưu recipe/BOM...",
-  saveRule: "Đang cập nhật ngưỡng margin..."
+  refresh: "Đang làm mới giá vốn...",
+  saveRecipe: "Đang lưu công thức/BOM...",
+  saveRule: "Đang cập nhật ngưỡng lợi nhuận..."
 };
 
 export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProps) {
@@ -36,7 +36,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
   const [note, setNote] = useState(() => initialSnapshot.targets[0]?.recipe?.note ?? "");
   const [ingredientRows, setIngredientRows] = useState<IngredientFormRow[]>(() => toIngredientRows(initialSnapshot.targets[0]));
   const [thresholdPercent, setThresholdPercent] = useState(initialSnapshot.marginRule.thresholdPercent.toString());
-  const [notice, setNotice] = useState("Product costing ready.");
+  const [notice, setNotice] = useState("Giá vốn sản phẩm sẵn sàng.");
   const [pendingOperation, setPendingOperation] = useState<PendingOperation | null>(null);
 
   const selectedTarget = useMemo(
@@ -60,7 +60,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
     try {
       const response = await fetch("/api/inventory/product-costing");
       const payload = (await response.json()) as { data?: ProductCostingAdminSnapshot; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không tải được costing.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không tải được giá vốn.");
       setSnapshot(payload.data);
       const refreshedTarget = payload.data.targets.find((target) => targetKey(target) === selectedKey) ?? payload.data.targets[0] ?? null;
       if (refreshedTarget) {
@@ -70,10 +70,10 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
         setIngredientRows(toIngredientRows(refreshedTarget));
       }
       setThresholdPercent(payload.data.marginRule.thresholdPercent.toString());
-      if (showNotice) setNotice("Đã làm mới costing.");
+      if (showNotice) setNotice("Đã làm mới giá vốn.");
     } catch (error) {
       console.info("[product-costing-admin] Refresh failed", error);
-      setNotice(error instanceof Error ? error.message : "Không tải được costing.");
+      setNotice(error instanceof Error ? error.message : "Không tải được giá vốn.");
     } finally {
       setPendingOperation(null);
     }
@@ -103,7 +103,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
         })
       });
       const payload = (await response.json()) as { data?: ProductCostingAdminSnapshot; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không lưu được recipe.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không lưu được công thức.");
       setSnapshot(payload.data);
       const updatedTarget = payload.data.targets.find((target) => target.targetType === selectedTarget.targetType && target.targetId === selectedTarget.targetId);
       if (updatedTarget) {
@@ -112,10 +112,10 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
         setNote(updatedTarget.recipe?.note ?? "");
         setIngredientRows(toIngredientRows(updatedTarget));
       }
-      setNotice(`Đã lưu recipe cho ${selectedTarget.label}`);
+      setNotice(`Đã lưu công thức cho ${selectedTarget.label}`);
     } catch (error) {
       console.info("[product-costing-admin] Save recipe failed", error);
-      setNotice(error instanceof Error ? error.message : "Không lưu được recipe.");
+      setNotice(error instanceof Error ? error.message : "Không lưu được công thức.");
     } finally {
       setPendingOperation(null);
     }
@@ -131,13 +131,13 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
         body: JSON.stringify({ thresholdPercent: parseNumber(thresholdPercent) })
       });
       const payload = (await response.json()) as { data?: ProductCostingAdminSnapshot; error?: { message: string } };
-      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không lưu được ngưỡng margin.");
+      if (!response.ok || !payload.data) throw new Error(payload.error?.message ?? "Không lưu được ngưỡng lợi nhuận.");
       setSnapshot(payload.data);
       setThresholdPercent(payload.data.marginRule.thresholdPercent.toString());
-      setNotice(`Đã cập nhật cảnh báo margin dưới ${payload.data.marginRule.thresholdPercent}%`);
+      setNotice(`Đã cập nhật cảnh báo lợi nhuận dưới ${payload.data.marginRule.thresholdPercent}%`);
     } catch (error) {
       console.info("[product-costing-admin] Save margin rule failed", error);
-      setNotice(error instanceof Error ? error.message : "Không lưu được ngưỡng margin.");
+      setNotice(error instanceof Error ? error.message : "Không lưu được ngưỡng lợi nhuận.");
     } finally {
       setPendingOperation(null);
     }
@@ -179,8 +179,8 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
       <header className={styles.header}>
         <div>
           <span className={styles.eyebrow}>Lac Garden POS</span>
-          <h1>Product costing</h1>
-          <p>Recipe/BOM, packaging cost, gross margin và low-margin warning.</p>
+          <h1>Giá vốn sản phẩm</h1>
+          <p>Công thức/BOM, chi phí bao bì, biên lợi nhuận gộp và cảnh báo lợi nhuận thấp.</p>
         </div>
         <div className={styles.headerActions}>
           <a className={styles.secondaryButton} href="/">
@@ -201,16 +201,16 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
       </section>
 
       <section className={styles.metrics}>
-        <Metric label="Products/variants" value={snapshot.targets.length.toString()} />
-        <Metric label="Low margin" value={lowMarginCount.toString()} tone={lowMarginCount ? "danger" : undefined} />
-        <Metric label="Missing recipe" value={missingRecipeCount.toString()} tone={missingRecipeCount ? "warn" : undefined} />
-        <Metric label="Threshold" value={`${snapshot.marginRule.thresholdPercent}%`} />
+        <Metric label="Sản phẩm/biến thể" value={snapshot.targets.length.toString()} />
+        <Metric label="Lợi nhuận thấp" value={lowMarginCount.toString()} tone={lowMarginCount ? "danger" : undefined} />
+        <Metric label="Thiếu công thức" value={missingRecipeCount.toString()} tone={missingRecipeCount ? "warn" : undefined} />
+        <Metric label="Ngưỡng cảnh báo" value={`${snapshot.marginRule.thresholdPercent}%`} />
       </section>
 
       <section className={styles.workbench}>
         <div className={styles.targetPane}>
           <div className={styles.toolbar}>
-            <strong>Menu costing</strong>
+            <strong>Giá vốn menu</strong>
             <span>{snapshot.targets.length} targets</span>
           </div>
           <div className={styles.targetList}>
@@ -224,7 +224,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
               >
                 <span>
                   <strong>{target.label}</strong>
-                  <small>{target.targetType === "MENU_ITEM" ? "Menu item" : "Variant"} · {formatVnd(target.salePriceVnd)}</small>
+                  <small>{target.targetType === "MENU_ITEM" ? "Món menu" : "Biến thể"} · {formatVnd(target.salePriceVnd)}</small>
                 </span>
                 <span className={styles.targetNumbers}>
                   <b>{formatVnd(target.cost.totalCostVnd)}</b>
@@ -232,7 +232,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                 </span>
               </button>
             ))}
-            {!snapshot.targets.length ? <p className={styles.emptyState}>Chưa có menu item để setup costing.</p> : null}
+            {!snapshot.targets.length ? <p className={styles.emptyState}>Chưa có món menu để thiết lập giá vốn.</p> : null}
           </div>
         </div>
 
@@ -240,11 +240,11 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
           <form className={styles.card} onSubmit={saveMarginRule}>
             <div className={styles.panelTitle}>
               <AlertTriangle size={18} />
-              <strong>Low-margin rule</strong>
+              <strong>Quy tắc lợi nhuận thấp</strong>
             </div>
             <div className={styles.ruleRow}>
               <label className={styles.field}>
-                <span>Warn below %</span>
+                <span>Cảnh báo dưới %</span>
                 <input
                   required
                   type="number"
@@ -256,7 +256,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                 />
               </label>
               <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
-                <ButtonContent loading={pendingOperation === "saveRule"} icon={<Save size={17} />} label="Lưu rule" loadingLabel="Đang lưu..." />
+                <ButtonContent loading={pendingOperation === "saveRule"} icon={<Save size={17} />} label="Lưu quy tắc" loadingLabel="Đang lưu..." />
               </button>
             </div>
           </form>
@@ -270,13 +270,13 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
 
               <div className={styles.costSummary}>
                 <CostCell label="Giá bán" value={formatVnd(selectedTarget.salePriceVnd)} />
-                <CostCell label="Ingredient" value={formatVnd(selectedTarget.cost.ingredientCostVnd)} />
-                <CostCell label="Packaging" value={formatVnd(selectedTarget.cost.packagingCostVnd)} />
-                <CostCell label="Margin" value={`${selectedTarget.cost.grossMarginPercent}%`} tone={selectedTarget.cost.isLowMargin ? "danger" : undefined} />
+                <CostCell label="Nguyên liệu" value={formatVnd(selectedTarget.cost.ingredientCostVnd)} />
+                <CostCell label="Bao bì" value={formatVnd(selectedTarget.cost.packagingCostVnd)} />
+                <CostCell label="Biên lợi nhuận" value={`${selectedTarget.cost.grossMarginPercent}%`} tone={selectedTarget.cost.isLowMargin ? "danger" : undefined} />
               </div>
 
               {selectedTarget.cost.recipeSource === "item-fallback" ? (
-                <p className={styles.warningText}>Variant này đang kế thừa recipe cấp menu item. Lưu form này để tạo override riêng.</p>
+                <p className={styles.warningText}>Biến thể này đang kế thừa công thức cấp món menu. Lưu biểu mẫu để tạo thiết lập riêng.</p>
               ) : null}
               {selectedTarget.cost.missingCostIngredientCount ? (
                 <p className={styles.warningText}>{selectedTarget.cost.missingCostIngredientCount} nguyên liệu chưa có đơn giá nhập mua.</p>
@@ -284,7 +284,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
 
               <div className={styles.formGrid}>
                 <label className={styles.field}>
-                  <span>Packaging cost VND</span>
+                  <span>Chi phí bao bì (VND)</span>
                   <input
                     required
                     type="number"
@@ -295,13 +295,13 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Note</span>
+                  <span>Ghi chú</span>
                   <input value={note} onChange={(event) => setNote(event.target.value)} />
                 </label>
               </div>
 
               <div className={styles.ingredientsHeader}>
-                <strong>Ingredients</strong>
+                <strong>Nguyên liệu</strong>
                 <button className={styles.secondaryButton} type="button" onClick={addIngredientRow} disabled={isSubmitting || !activeInventoryItems.length}>
                   <PackagePlus size={16} /> Thêm dòng
                 </button>
@@ -311,7 +311,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                 {ingredientRows.map((row) => (
                   <div className={styles.ingredientRow} key={row.clientId}>
                     <label className={styles.field}>
-                      <span>Ingredient</span>
+                      <span>Nguyên liệu</span>
                       <select
                         required
                         value={row.inventoryItemId}
@@ -325,7 +325,7 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                       </select>
                     </label>
                     <label className={styles.field}>
-                      <span>Qty</span>
+                      <span>Số lượng</span>
                       <input
                         required
                         type="number"
@@ -336,11 +336,11 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                       />
                     </label>
                     <label className={styles.field}>
-                      <span>Unit</span>
+                      <span>Đơn vị</span>
                       <input required value={row.unit} onChange={(event) => updateIngredientRow(row.clientId, { unit: event.target.value })} />
                     </label>
                     <label className={styles.field}>
-                      <span>Waste %</span>
+                      <span>Hao hụt %</span>
                       <input
                         required
                         type="number"
@@ -354,23 +354,23 @@ export function ProductCostingAdmin({ initialSnapshot }: ProductCostingAdminProp
                     <button
                       className={styles.iconDangerButton}
                       type="button"
-                      aria-label="Xóa ingredient"
+                      aria-label="Xóa nguyên liệu"
                       onClick={() => setIngredientRows((current) => current.filter((item) => item.clientId !== row.clientId))}
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
                 ))}
-                {!ingredientRows.length ? <p className={styles.emptyState}>Chưa có ingredient. Thêm dòng để bắt đầu BOM.</p> : null}
+                {!ingredientRows.length ? <p className={styles.emptyState}>Chưa có nguyên liệu. Thêm dòng để bắt đầu BOM.</p> : null}
               </div>
 
               <button className={styles.primaryButton} type="submit" disabled={isSubmitting || !selectedTarget}>
-                <ButtonContent loading={pendingOperation === "saveRecipe"} icon={<Save size={17} />} label="Lưu recipe/BOM" loadingLabel="Đang lưu..." />
+                <ButtonContent loading={pendingOperation === "saveRecipe"} icon={<Save size={17} />} label="Lưu công thức/BOM" loadingLabel="Đang lưu..." />
               </button>
             </form>
           ) : (
             <section className={styles.card}>
-              <p className={styles.emptyState}>Không có product target khả dụng.</p>
+              <p className={styles.emptyState}>Không có sản phẩm khả dụng.</p>
             </section>
           )}
         </aside>
@@ -398,7 +398,7 @@ function CostCell({ label, value, tone }: { label: string; value: string; tone?:
 }
 
 function MarginBadge({ target }: { target: ProductCostTargetDto }) {
-  const label = target.cost.recipeSource === "none" ? "No recipe" : target.cost.isLowMargin ? "Low margin" : `${target.cost.grossMarginPercent}%`;
+  const label = target.cost.recipeSource === "none" ? "Chưa có công thức" : target.cost.isLowMargin ? "Lợi nhuận thấp" : `${target.cost.grossMarginPercent}%`;
   return (
     <small className={`${styles.marginBadge} ${target.cost.isLowMargin ? styles.lowMarginBadge : ""} ${target.cost.recipeSource === "none" ? styles.noRecipeBadge : ""}`}>
       {label}
@@ -452,7 +452,7 @@ function parseNumber(value: string) {
 }
 
 function formatNullableVnd(amount: number | null) {
-  return amount === null ? "no cost" : formatVnd(amount);
+  return amount === null ? "chưa có giá vốn" : formatVnd(amount);
 }
 
 function formatVnd(amount: number) {

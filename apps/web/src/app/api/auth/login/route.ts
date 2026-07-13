@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         {
           error: {
             code: "VALIDATION_ERROR",
-            message: "Login payload is invalid.",
+            message: "Thông tin đăng nhập không hợp lệ.",
             details: error.flatten()
           }
         },
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     }
 
     console.info("[auth-api] Staff login failed", error);
-    return NextResponse.json({ error: { code: "LOGIN_ERROR", message: "Unable to sign in." } }, { status: 500 });
+    return NextResponse.json({ error: { code: "LOGIN_ERROR", message: "Không thể đăng nhập." } }, { status: 500 });
   }
 }

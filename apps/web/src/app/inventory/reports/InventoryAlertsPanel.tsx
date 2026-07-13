@@ -70,7 +70,7 @@ export function InventoryAlertsPanel({ lowStockItems, outOfStockItems, staleStoc
                 {label} · {formatNumber(item.currentQuantity)} / ngưỡng {formatNumber(item.lowStockThreshold)} {item.unit}
               </small>
             </div>
-            <button type="button" onClick={() => acknowledge(item.id)} aria-label={`Acknowledge ${item.name}`}>
+            <button type="button" onClick={() => acknowledge(item.id)} aria-label={`Xác nhận cảnh báo ${item.name}`}>
               <X size={15} />
             </button>
           </article>

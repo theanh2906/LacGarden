@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
     console.info("[inventory-api] Inventory report export failed", error);
     return Response.json(
-      { error: { code: "INVENTORY_REPORT_EXPORT_ERROR", message: "Unable to export inventory report. Check admin logs for details." } },
+      { error: { code: "INVENTORY_REPORT_EXPORT_ERROR", message: "Không thể xuất báo cáo kho. Kiểm tra nhật ký quản trị để biết chi tiết." } },
       { status: 400 }
     );
   }
@@ -49,29 +49,29 @@ export async function GET(request: Request) {
 
 function buildCsv(report: InventoryReportDto) {
   const rows: string[][] = [];
-  addSection(rows, "Report period", [
-    ["Mode", report.period.mode],
-    ["Label", report.period.label],
-    ["Start", report.period.startDate],
-    ["End", report.period.endDate],
-    ["Generated at", report.generatedAt]
+  addSection(rows, "Kỳ báo cáo", [
+    ["Chế độ", report.period.mode],
+    ["Nhãn", report.period.label],
+    ["Bắt đầu", report.period.startDate],
+    ["Kết thúc", report.period.endDate],
+    ["Tạo lúc", report.generatedAt]
   ]);
-  addSection(rows, "Summary", Object.entries(report.summary).map(([key, value]) => [key, String(value)]));
-  addSection(rows, "Low stock", report.lowStockItems.map((item) => [item.name, item.unit, String(item.currentQuantity), String(item.lowStockThreshold), item.alertState]));
-  addSection(rows, "Out of stock", report.outOfStockItems.map((item) => [item.name, item.unit, String(item.currentQuantity), String(item.lowStockThreshold), item.alertState]));
+  addSection(rows, "Tổng quan", Object.entries(report.summary).map(([key, value]) => [key, String(value)]));
+  addSection(rows, "Tồn kho thấp", report.lowStockItems.map((item) => [item.name, item.unit, String(item.currentQuantity), String(item.lowStockThreshold), item.alertState]));
+  addSection(rows, "Hết hàng", report.outOfStockItems.map((item) => [item.name, item.unit, String(item.currentQuantity), String(item.lowStockThreshold), item.alertState]));
   addSection(
     rows,
-    "Purchase cost buckets",
+    "Nhóm chi phí mua hàng",
     report.purchaseCostBuckets.map((bucket) => [bucket.label, String(bucket.totalCostVnd), String(bucket.movementCount), String(bucket.netQuantityDelta)])
   );
   addSection(
     rows,
-    "Movement type breakdown",
+    "Phân loại biến động",
     report.movementTypeBreakdown.map((row) => [row.movementType, row.label, String(row.movementCount), String(row.totalQuantityAbs), String(row.totalCostVnd)])
   );
   addSection(
     rows,
-    "Top changed ingredients",
+    "Nguyên liệu biến động nhiều",
     report.topChangedIngredients.map((row) => [
       row.itemName,
       row.unit,
@@ -85,7 +85,7 @@ function buildCsv(report: InventoryReportDto) {
   );
   addSection(
     rows,
-    "Recent movements",
+    "Biến động gần đây",
     report.recentMovements.map((movement) => [
       movement.createdAt,
       movement.itemName,
@@ -99,12 +99,12 @@ function buildCsv(report: InventoryReportDto) {
   );
   addSection(
     rows,
-    "Uploads",
+    "Tệp đã tải lên",
     report.reconciliation.latestUploads.map((upload) => [upload.createdAt, upload.originalFileName, upload.uploadType, upload.status, String(upload.fileSize)])
   );
   addSection(
     rows,
-    "Import batches",
+    "Lô nhập dữ liệu",
     report.reconciliation.latestImportBatches.map((batch) => [
       batch.createdAt,
       batch.upload.originalFileName,
@@ -134,17 +134,17 @@ function buildWorkbook(report: InventoryReportDto) {
         ...report.summary
       }
     ]),
-    "Summary"
+    "Tổng quan"
   );
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.stockOverview), "Stock");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.lowStockItems), "Low stock");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.purchaseCostBuckets), "Purchase cost");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.stockTrendBuckets), "Stock trend");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.movementTypeBreakdown), "Movement types");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.topChangedIngredients), "Top changed");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.recentMovements), "Movements");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.reconciliation.latestUploads), "Uploads");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.reconciliation.latestImportBatches), "Imports");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.stockOverview), "Tồn kho");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.lowStockItems), "Tồn kho thấp");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.purchaseCostBuckets), "Chi phí mua");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.stockTrendBuckets), "Xu hướng tồn kho");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.movementTypeBreakdown), "Loại biến động");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.topChangedIngredients), "Biến động nhiều");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.recentMovements), "Biến động");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.reconciliation.latestUploads), "Tệp tải lên");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(report.reconciliation.latestImportBatches), "Lô nhập");
   return workbook;
 }
 

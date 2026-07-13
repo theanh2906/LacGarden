@@ -160,7 +160,7 @@ export async function createInventoryStockMovement(input: CreateStockMovementInp
     });
 
     if (!item.isActive) {
-      throw new InventoryServiceError("Cannot record stock movement for an inactive ingredient.");
+      throw new InventoryServiceError("Không thể ghi biến động cho nguyên liệu đã ngưng dùng.");
     }
 
     const quantityBefore = item.currentQuantity;
@@ -168,12 +168,12 @@ export async function createInventoryStockMovement(input: CreateStockMovementInp
     const quantityAfter = quantityBefore.plus(quantityDelta);
 
     if (quantityAfter.lt(0)) {
-      throw new InventoryServiceError("Stock quantity cannot go below zero.");
+      throw new InventoryServiceError("Số lượng tồn kho không thể nhỏ hơn 0.");
     }
 
     const purchaseDate = input.purchaseDate ? new Date(input.purchaseDate) : null;
     if (input.movementType === "PURCHASE" && !purchaseDate) {
-      throw new InventoryServiceError("Purchase date is required for purchase stock movements.");
+      throw new InventoryServiceError("Ngày mua là bắt buộc cho biến động nhập mua.");
     }
 
     const movement = await tx.inventoryStockMovement.create({
@@ -275,13 +275,13 @@ export function getInventoryErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Inventory operation failed. Check admin logs for details.";
+  return "Thao tác kho thất bại. Kiểm tra nhật ký quản trị để biết chi tiết.";
 }
 
 function resolveQuantityDelta(input: CreateStockMovementInput, currentQuantity: Prisma.Decimal): Prisma.Decimal {
   if (input.movementType === "CORRECTION") {
     if (input.finalQuantity === undefined) {
-      throw new InventoryServiceError("Final quantity is required for stock corrections.");
+      throw new InventoryServiceError("Số lượng thực tế là bắt buộc khi kiểm kho.");
     }
     return toDecimal(input.finalQuantity).minus(currentQuantity);
   }
@@ -289,7 +289,7 @@ function resolveQuantityDelta(input: CreateStockMovementInput, currentQuantity: 
   if (input.movementType === "PURCHASE") {
     const delta = toDecimal(input.quantity ?? input.quantityDelta ?? 0);
     if (delta.lte(0)) {
-      throw new InventoryServiceError("Purchase quantity must be greater than zero.");
+      throw new InventoryServiceError("Số lượng nhập mua phải lớn hơn 0.");
     }
     return delta;
   }
@@ -297,14 +297,14 @@ function resolveQuantityDelta(input: CreateStockMovementInput, currentQuantity: 
   if (input.movementType === "WASTE") {
     const delta = toDecimal(input.quantity ?? Math.abs(input.quantityDelta ?? 0)).mul(-1);
     if (delta.gte(0)) {
-      throw new InventoryServiceError("Waste quantity must be greater than zero.");
+      throw new InventoryServiceError("Số lượng hao hụt phải lớn hơn 0.");
     }
     return delta;
   }
 
   const delta = toDecimal(input.quantityDelta ?? 0);
   if (delta.isZero()) {
-    throw new InventoryServiceError("Adjustment quantity delta cannot be zero.");
+    throw new InventoryServiceError("Số lượng điều chỉnh không được bằng 0.");
   }
   return delta;
 }

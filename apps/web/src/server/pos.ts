@@ -223,7 +223,7 @@ export async function getPrintableReceipt(orderId: string) {
   });
 
   if (order.paymentStatus !== "PAID") {
-    throw new PosServiceError("Receipt is only available for paid orders.");
+    throw new PosServiceError("Hoá đơn chỉ có cho đơn hàng đã thanh toán.");
   }
 
   return {
@@ -277,7 +277,7 @@ export async function getPrintableBarTicket(orderId: string) {
   });
 
   if (!["SENT", "PREPARING", "READY"].includes(order.status)) {
-    throw new PosServiceError("Bar ticket is only available for active queue orders.");
+    throw new PosServiceError("Phiếu pha chế chỉ có cho đơn hàng đang ở hàng chờ.");
   }
 
   return {
@@ -397,20 +397,20 @@ export async function confirmPaymentManually(paymentId: string, context: StaffCo
       });
 
       if (payment.status === "CONFIRMED") {
-        throw new PosServiceError("Payment has already been confirmed.");
+        throw new PosServiceError("Thanh toán đã được xác nhận.");
       }
       if (payment.status !== "PENDING") {
-        throw new PosServiceError("Only pending payments can be manually confirmed.");
+        throw new PosServiceError("Chỉ có thể xác nhận thủ công thanh toán đang chờ.");
       }
       if (payment.expiresAt && payment.expiresAt.getTime() < Date.now()) {
         await tx.payment.update({
           where: { id: payment.id },
           data: { reconciliationStatus: "EXPIRED" }
         });
-        throw new PosServiceError("Payment QR has expired. Create a new checkout request.");
+        throw new PosServiceError("Mã QR thanh toán đã hết hạn. Hãy tạo yêu cầu thanh toán mới.");
       }
       if (payment.order.status === "CANCELLED") {
-        throw new PosServiceError("Cannot confirm payment for a cancelled order.");
+        throw new PosServiceError("Không thể xác nhận thanh toán cho đơn đã huỷ.");
       }
 
       const paidAmount = toNumber(payment.amount);
@@ -432,7 +432,7 @@ export async function confirmPaymentManually(paymentId: string, context: StaffCo
       });
 
       if (updatedCount.count !== 1) {
-        throw new PosServiceError("Payment has already been handled.");
+        throw new PosServiceError("Thanh toán đã được xử lý.");
       }
 
       const confirmedPaid =
@@ -512,7 +512,7 @@ export class PosServiceError extends Error {
 
 export function getPosErrorMessage(error: unknown) {
   if (error instanceof PosServiceError) return error.message;
-  return "POS operation failed. Check admin logs for details.";
+  return "Thao tác POS thất bại. Kiểm tra nhật ký quản trị để biết chi tiết.";
 }
 
 type ManualPaymentConfirmation = {
@@ -525,7 +525,7 @@ type ManualPaymentConfirmation = {
 
 async function createOrderInTransaction(tx: Prisma.TransactionClient, input: CreateOrderInput, context: StaffContext): Promise<PosOrder> {
   if (input.items.length === 0) {
-    throw new PosServiceError("Cart is empty.");
+    throw new PosServiceError("Giỏ hàng đang trống.");
   }
 
   const cashier = await getStaffOrSystemCashier(tx, context.staffId);
@@ -548,7 +548,7 @@ async function createOrderInTransaction(tx: Prisma.TransactionClient, input: Cre
   const lines = input.items.map((line) => {
     const variant = variantById.get(line.variantId);
     if (!variant || variant.itemId !== line.menuItemId) {
-      throw new PosServiceError("A cart item is no longer available.");
+      throw new PosServiceError("Một món trong giỏ không còn khả dụng.");
     }
 
     const unitPrice = toNumber(variant.price);
@@ -619,7 +619,7 @@ async function createPaymentInTransaction(
   }
 ) {
   if (input.amount <= 0) {
-    throw new PosServiceError("Payment amount must be greater than zero.");
+    throw new PosServiceError("Số tiền thanh toán phải lớn hơn 0.");
   }
 
   const order = await tx.order.findUniqueOrThrow({
@@ -627,7 +627,7 @@ async function createPaymentInTransaction(
     include: { payments: true }
   });
   if (order.status === "CANCELLED") {
-    throw new PosServiceError("Cannot pay a cancelled order.");
+    throw new PosServiceError("Không thể thanh toán đơn đã huỷ.");
   }
 
   const cashier = await getStaffOrSystemCashier(tx, input.staffId);
@@ -673,7 +673,7 @@ async function createPendingBankTransferPaymentInTransaction(
 ): Promise<QrPaymentRequest> {
   const amount = toNumber(order.total);
   if (amount <= 0) {
-    throw new PosServiceError("Payment amount must be greater than zero.");
+    throw new PosServiceError("Số tiền thanh toán phải lớn hơn 0.");
   }
 
   const cashier = await getStaffOrSystemCashier(tx, context.staffId);
@@ -688,7 +688,7 @@ async function createPendingBankTransferPaymentInTransaction(
   });
 
   if (duplicatePending) {
-    throw new PosServiceError("A pending bank transfer payment already exists for this order.");
+    throw new PosServiceError("Đơn hàng này đã có một thanh toán chuyển khoản đang chờ.");
   }
 
   const payment = await tx.payment.create({
@@ -738,7 +738,7 @@ async function getStaffOrSystemCashier(tx: Prisma.TransactionClient, staffId: st
       }
     });
     if (!staff) {
-      throw new PosServiceError("Staff session is no longer active.");
+      throw new PosServiceError("Phiên nhân viên không còn hoạt động.");
     }
     return staff;
   }

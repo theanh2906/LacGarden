@@ -40,7 +40,7 @@ export class PayrollServiceError extends Error {
 
 export function getPayrollErrorMessage(error: unknown) {
   if (error instanceof PayrollServiceError) return error.message;
-  return "Payroll operation failed. Check admin logs for details.";
+  return "Thao tác bảng lương thất bại. Kiểm tra nhật ký quản trị để biết chi tiết.";
 }
 
 export async function getPayrollSnapshot(input: Partial<PayrollQueryInput> = {}): Promise<PayrollSnapshotDto> {
@@ -88,7 +88,7 @@ export async function getPayrollSnapshot(input: Partial<PayrollQueryInput> = {})
 
 export async function generatePayrollRun(input: GeneratePayrollRunInput, context: StaffContext = {}): Promise<PayrollRunDto> {
   if (dateOnly(input.endDate) < dateOnly(input.startDate)) {
-    throw new PayrollServiceError("Payroll period end date must be after start date.");
+    throw new PayrollServiceError("Ngày kết thúc kỳ lương phải sau ngày bắt đầu.");
   }
 
   const db = getDb();
@@ -101,7 +101,7 @@ export async function generatePayrollRun(input: GeneratePayrollRunInput, context
       orderBy: [{ employeeProfile: { displayName: "asc" } }, { periodStart: "asc" }]
     });
     if (!approvedTimesheets.length) {
-      throw new PayrollServiceError("No approved timesheets found for this payroll period.");
+      throw new PayrollServiceError("Không có bảng chấm công đã duyệt trong kỳ lương này.");
     }
 
     const period = await tx.payrollPeriod.upsert({
@@ -180,7 +180,7 @@ export async function reviewPayrollRun(input: ReviewPayrollRunInput, context: St
       include: { lines: true }
     });
     if (!existing.lines.length) {
-      throw new PayrollServiceError("Payroll run has no lines to review.");
+      throw new PayrollServiceError("Đợt lương không có dòng nào để xét duyệt.");
     }
 
     const now = new Date();
@@ -210,7 +210,7 @@ export async function createPayrollAdjustment(input: CreatePayrollAdjustmentInpu
       include: { run: true }
     });
     if (line.run.status === "APPROVED") {
-      throw new PayrollServiceError("Approved payroll runs cannot be adjusted. Reopen the run first.");
+      throw new PayrollServiceError("Không thể điều chỉnh đợt lương đã duyệt. Hãy mở lại đợt lương trước.");
     }
 
     await tx.payrollAdjustment.create({
@@ -305,10 +305,10 @@ function calculatePayrollLine(
   const fixedPayVnd = fixedSalaryVnd ?? 0;
   const overtimePayVnd = moneyForMinutes(overtimeMinutes, overtimeHourlyRateVnd, overtimeMultiplier);
   const notes = [
-    "Uses approved timesheet totals only.",
-    hourlyRateVnd ? `Hourly rate: ${hourlyRateVnd} VND.` : "No hourly rate configured.",
-    fixedSalaryVnd ? `Fixed salary: ${fixedSalaryVnd} VND.` : "No fixed salary configured.",
-    overtimeMinutes ? `Overtime multiplier: ${overtimeMultiplier}.` : "No overtime in approved timesheet."
+    "Chỉ sử dụng tổng giờ từ bảng chấm công đã duyệt.",
+    hourlyRateVnd ? `Lương giờ: ${hourlyRateVnd} VND.` : "Chưa cấu hình lương giờ.",
+    fixedSalaryVnd ? `Lương cố định: ${fixedSalaryVnd} VND.` : "Chưa cấu hình lương cố định.",
+    overtimeMinutes ? `Hệ số tăng ca: ${overtimeMultiplier}.` : "Không có tăng ca trong bảng chấm công đã duyệt."
   ];
 
   return {

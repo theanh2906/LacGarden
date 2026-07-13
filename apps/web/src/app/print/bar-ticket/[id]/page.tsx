@@ -8,7 +8,7 @@ import styles from "../../Print.module.scss";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Printable Bar Ticket | Lac Garden POS"
+  title: "Phiếu pha chế | Lac Garden POS"
 };
 
 export default async function BarTicketPrintPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,10 +25,10 @@ export default async function BarTicketPrintPage({ params }: { params: Promise<{
       <PrintActions />
       <article className={`${styles.ticket} ${styles.barPaper}`}>
         <header className={styles.header}>
-          <h1>Bar Ticket</h1>
+          <h1>Phiếu pha chế</h1>
           <strong>{ticket.orderNo}</strong>
           <span>
-            {ticket.orderTypeLabel} · {ticket.age} · {ticket.status}
+            {ticket.orderTypeLabel} · {ticket.age} · {orderStatusText(ticket.status)}
           </span>
         </header>
 
@@ -41,7 +41,7 @@ export default async function BarTicketPrintPage({ params }: { params: Promise<{
               <div className={styles.item}>
                 <div>
                   <strong>{item.name}</strong>
-                  <span>{item.status}</span>
+                  <span>{barItemStatusText(item.status)}</span>
                 </div>
                 <small>
                   {item.variant}
@@ -54,7 +54,7 @@ export default async function BarTicketPrintPage({ params }: { params: Promise<{
         </section>
 
         <footer className={styles.footer}>
-          <small>Created {formatDateTime(ticket.createdAt)}</small>
+          <small>Tạo lúc {formatDateTime(ticket.createdAt)}</small>
         </footer>
       </article>
     </main>
@@ -63,4 +63,27 @@ export default async function BarTicketPrintPage({ params }: { params: Promise<{
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+}
+
+function orderStatusText(status: string) {
+  const labels: Record<string, string> = {
+    SENT: "Đã gửi",
+    PREPARING: "Đang pha",
+    READY: "Sẵn sàng",
+    SERVED: "Đã phục vụ",
+    CLOSED: "Đã đóng",
+    CANCELLED: "Đã huỷ"
+  };
+  return labels[status] ?? status;
+}
+
+function barItemStatusText(status: string) {
+  const labels: Record<string, string> = {
+    Queued: "Đang chờ",
+    Brewing: "Đang pha",
+    Ready: "Sẵn sàng",
+    Served: "Đã phục vụ",
+    Cancelled: "Đã huỷ"
+  };
+  return labels[status] ?? status;
 }

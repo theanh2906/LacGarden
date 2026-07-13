@@ -17,8 +17,8 @@ import styles from "./SalesReports.module.scss";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sales Analytics | Lac Garden POS",
-  description: "Sales, product performance, payment reconciliation, tax, and exports for Lac Garden POS"
+  title: "Phân tích bán hàng | Lac Garden POS",
+  description: "Doanh thu, hiệu quả sản phẩm, đối soát thanh toán, thuế và xuất dữ liệu cho Lac Garden POS"
 };
 
 type SalesReportsPageProps = {
@@ -47,8 +47,8 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
           <Link className={styles.backLink} href="/">
             <ArrowLeft size={16} /> POS
           </Link>
-          <h1>Sales analytics</h1>
-          <p>Revenue, product performance, payment reconciliation, tax, and manager exports.</p>
+          <h1>Phân tích bán hàng</h1>
+          <p>Doanh thu, hiệu quả sản phẩm, đối soát thanh toán, thuế và xuất dữ liệu quản lý.</p>
         </div>
         <div className={styles.headerActions}>
           <a className={styles.secondaryButton} href={buildExportHref(report, "csv")}>
@@ -70,7 +70,7 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
             <option value="day">Ngày</option>
             <option value="week">Tuần</option>
             <option value="month">Tháng</option>
-            <option value="custom">Custom</option>
+            <option value="custom">Tuỳ chọn</option>
           </select>
         </label>
         <label>
@@ -94,58 +94,58 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
           <input name="endDate" type="date" defaultValue={formValues.endDate} />
         </label>
         <button className={styles.primaryButton} type="submit">
-          Apply
+          Áp dụng
         </button>
       </form>
 
       <section className={styles.periodStrip}>
-        <span>Period</span>
+        <span>Kỳ</span>
         <strong>{report.period.label}</strong>
         <small>
           {formatDate(report.period.startDate)} - {formatDate(addDaysIso(report.period.endDate, -1))}
         </small>
       </section>
 
-      <section className={styles.metrics} aria-label="Sales report summary">
-        <Metric label="Revenue" value={formatVnd(report.summary.salesRevenueVnd)} />
-        <Metric label="Orders" value={formatNumber(report.summary.orderCount)} />
-        <Metric label="AOV" value={formatVnd(report.summary.averageOrderValueVnd)} />
-        <Metric label="Gross margin" value={`${report.summary.grossMarginPercent}%`} tone={report.summary.grossMarginPercent < 35 ? "warn" : undefined} />
-        <Metric label="Tax" value={formatVnd(report.taxReport.taxAmountVnd)} />
-        <Metric label="Pending pay" value={formatVnd(report.taxReport.pendingPaymentVnd)} tone={report.taxReport.pendingPaymentVnd ? "danger" : undefined} />
+      <section className={styles.metrics} aria-label="Tổng quan báo cáo bán hàng">
+        <Metric label="Doanh thu" value={formatVnd(report.summary.salesRevenueVnd)} />
+        <Metric label="Đơn hàng" value={formatNumber(report.summary.orderCount)} />
+        <Metric label="Giá trị đơn trung bình" value={formatVnd(report.summary.averageOrderValueVnd)} />
+        <Metric label="Biên lợi nhuận gộp" value={`${report.summary.grossMarginPercent}%`} tone={report.summary.grossMarginPercent < 35 ? "warn" : undefined} />
+        <Metric label="Thuế" value={formatVnd(report.taxReport.taxAmountVnd)} />
+        <Metric label="Chờ thanh toán" value={formatVnd(report.taxReport.pendingPaymentVnd)} tone={report.taxReport.pendingPaymentVnd ? "danger" : undefined} />
       </section>
 
       <section className={styles.dashboardGrid}>
         <section className={styles.panelLarge}>
           <div className={styles.panelTitle}>
             <BarChart3 size={18} />
-            <strong>Sales revenue</strong>
+            <strong>Doanh thu bán hàng</strong>
           </div>
           <RevenueBarChart buckets={report.revenueBuckets} />
         </section>
         <section className={styles.panel}>
           <div className={styles.panelTitle}>
             <TrendingUp size={18} />
-            <strong>Order count & AOV</strong>
+            <strong>Số đơn và giá trị đơn trung bình</strong>
           </div>
           <OrderLineChart buckets={report.revenueBuckets} />
         </section>
         <section className={styles.panel}>
           <div className={styles.panelTitle}>
             <PieChart size={18} />
-            <strong>Payment split</strong>
+            <strong>Cơ cấu thanh toán</strong>
           </div>
           <PaymentDonut rows={report.paymentMethodSplit} />
         </section>
       </section>
 
       <section className={styles.twoColumn}>
-        <ReportTable title="Favorite items by quantity" columns={["Product", "Qty", "Revenue", "Contribution"]}>
+        <ReportTable title="Sản phẩm bán chạy theo số lượng" columns={["Sản phẩm", "SL", "Doanh thu", "Tỷ trọng"]}>
           {report.favoriteItems.map((item) => (
             <ProductRow key={item.key} item={item} mode="favorite" />
           ))}
         </ReportTable>
-        <ReportTable title="Product performance" columns={["Product", "Qty", "Revenue", "Gross margin", "Cost"]}>
+        <ReportTable title="Hiệu quả sản phẩm" columns={["Sản phẩm", "SL", "Doanh thu", "Biên lợi nhuận gộp", "Giá vốn"]}>
           {report.bestSellers.map((item) => (
             <ProductRow key={item.key} item={item} mode="performance" />
           ))}
@@ -153,12 +153,12 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
       </section>
 
       <section className={styles.twoColumn}>
-        <ReportTable title="Slow movers" columns={["Product", "Qty", "Revenue", "Last sold"]}>
+        <ReportTable title="Sản phẩm bán chậm" columns={["Sản phẩm", "SL", "Doanh thu", "Bán gần nhất"]}>
           {report.slowMovers.map((item) => (
             <tr key={item.key}>
               <td>
                 <strong>{item.name}</strong>
-                <small>{item.variantName ?? "Default"}</small>
+                <small>{item.variantName ?? "Mặc định"}</small>
               </td>
               <td>{formatNumber(item.quantitySold)}</td>
               <td>{formatVnd(item.revenueVnd)}</td>
@@ -170,28 +170,28 @@ export default async function SalesReportsPage({ searchParams }: SalesReportsPag
         <section className={styles.taxPanel}>
           <div className={styles.panelTitle}>
             <ReceiptText size={18} />
-            <strong>Tax & reconciliation</strong>
+            <strong>Thuế và đối soát</strong>
           </div>
           <div className={styles.taxGrid}>
-            <TaxCell label="Taxable revenue" value={formatVnd(report.taxReport.taxableRevenueVnd)} />
+            <TaxCell label="Doanh thu chịu thuế" value={formatVnd(report.taxReport.taxableRevenueVnd)} />
             <TaxCell label={`Tax (${report.taxReport.taxRatePercent}%)`} value={formatVnd(report.taxReport.taxAmountVnd)} />
-            <TaxCell label="Discounts" value={formatVnd(report.taxReport.discountsVnd)} />
-            <TaxCell label="Service charge" value={formatVnd(report.taxReport.serviceChargeVnd)} />
-            <TaxCell label="Confirmed payments" value={formatVnd(report.taxReport.confirmedPaymentVnd)} />
-            <TaxCell label="Payment difference" value={formatVnd(report.taxReport.paymentDifferenceVnd)} tone={report.taxReport.paymentDifferenceVnd ? "warn" : undefined} />
+            <TaxCell label="Giảm giá" value={formatVnd(report.taxReport.discountsVnd)} />
+            <TaxCell label="Phí phục vụ" value={formatVnd(report.taxReport.serviceChargeVnd)} />
+            <TaxCell label="Thanh toán đã xác nhận" value={formatVnd(report.taxReport.confirmedPaymentVnd)} />
+            <TaxCell label="Chênh lệch thanh toán" value={formatVnd(report.taxReport.paymentDifferenceVnd)} tone={report.taxReport.paymentDifferenceVnd ? "warn" : undefined} />
           </div>
           <table className={styles.reconciliationTable}>
             <thead>
               <tr>
-                <th>Payment status</th>
-                <th>Orders</th>
-                <th>Total</th>
+                <th>Trạng thái thanh toán</th>
+                <th>Đơn hàng</th>
+                <th>Tổng tiền</th>
               </tr>
             </thead>
             <tbody>
               {report.taxReport.reconciliationByOrderStatus.map((row) => (
                 <tr key={row.paymentStatus}>
-                  <td>{row.paymentStatus}</td>
+                  <td>{paymentStatusText(row.paymentStatus)}</td>
                   <td>{formatNumber(row.orderCount)}</td>
                   <td>{formatVnd(row.orderTotalVnd)}</td>
                 </tr>
@@ -241,8 +241,8 @@ function ProductRow({ item, mode }: { item: ProductPerformanceRowDto; mode: "fav
       <td>
         <strong>{item.name}</strong>
         <small>
-          {item.variantName ?? "Default"}
-          {item.missingCostSnapshotCount ? ` · ${item.missingCostSnapshotCount} no-cost lines` : ""}
+          {item.variantName ?? "Mặc định"}
+          {item.missingCostSnapshotCount ? ` · ${item.missingCostSnapshotCount} dòng thiếu giá vốn` : ""}
         </small>
       </td>
       <td>{formatNumber(item.quantitySold)}</td>
@@ -295,7 +295,7 @@ function OrderLineChart({ buckets }: { buckets: SalesReportBucketDto[] }) {
 
   return (
     <div className={styles.lineChart}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Order count and average order value trend">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Xu hướng số đơn và giá trị đơn trung bình">
         <path d="M0 90 H100" />
         <polyline points={orderPoints.join(" ")} />
         <polyline className={styles.aovLine} points={aovPoints.join(" ")} />
@@ -303,7 +303,7 @@ function OrderLineChart({ buckets }: { buckets: SalesReportBucketDto[] }) {
       <div className={styles.chartLegend}>
         <span>{buckets[0]?.label ?? "-"}</span>
         <strong>
-          {formatNumber(buckets.reduce((total, bucket) => total + bucket.orderCount, 0))} orders · AOV{" "}
+          {formatNumber(buckets.reduce((total, bucket) => total + bucket.orderCount, 0))} đơn · Giá trị đơn TB{" "}
           {formatVnd(Math.round(buckets.reduce((total, bucket) => total + bucket.averageOrderValueVnd, 0) / Math.max(1, buckets.length)))}
         </strong>
         <span>{buckets[buckets.length - 1]?.label ?? "-"}</span>
@@ -329,7 +329,7 @@ function PaymentDonut({ rows }: { rows: PaymentMethodSplitDto[] }) {
     <div className={styles.donutWrap}>
       <div className={styles.donut} style={{ "--donut": total ? gradient : "#ead9bf 0% 100%" } as CSSProperties}>
         <strong>{formatCompactVnd(total)}</strong>
-        <span>paid</span>
+        <span>đã thanh toán</span>
       </div>
       <div className={styles.breakdownList}>
         {rows.map((row, index) => (
@@ -406,6 +406,16 @@ function paymentMethodLabel(method: PaymentMethodSplitDto["method"]) {
     OTHER: "Khác"
   };
   return labels[method];
+}
+
+function paymentStatusText(status: string) {
+  const labels: Record<string, string> = {
+    UNPAID: "Chưa thanh toán",
+    PARTIAL: "Thanh toán một phần",
+    PAID: "Đã thanh toán",
+    REFUNDED: "Đã hoàn tiền"
+  };
+  return labels[status] ?? status;
 }
 
 function addDaysIso(value: string, days: number) {

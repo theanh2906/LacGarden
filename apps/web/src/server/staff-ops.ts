@@ -43,7 +43,7 @@ export class StaffOpsServiceError extends Error {
 
 export function getStaffOpsErrorMessage(error: unknown) {
   if (error instanceof StaffOpsServiceError) return error.message;
-  return "Staff operation failed. Check admin logs for details.";
+  return "Thao tác nhân sự thất bại. Kiểm tra nhật ký quản trị để biết chi tiết.";
 }
 
 export async function getStaffOpsSnapshot(input: Partial<StaffOpsQueryInput> = {}, context: StaffContext = {}): Promise<StaffOpsSnapshotDto> {
@@ -158,7 +158,7 @@ export async function upsertStaffSchedule(input: UpsertStaffScheduleInput, conte
   const start = localDateTime(input.scheduleDate, input.startTime);
   const end = localDateTime(input.scheduleDate, input.endTime, start);
   if (end <= start) {
-    throw new StaffOpsServiceError("Schedule end time must be after start time.");
+    throw new StaffOpsServiceError("Thời gian kết thúc ca phải sau thời gian bắt đầu.");
   }
 
   const data = {
@@ -191,7 +191,7 @@ export async function clockIn(context: Required<StaffContext>): Promise<CurrentC
   await db.$transaction(async (tx) => {
     const profile = await ensureEmployeeProfileForUser(tx, context.staffId);
     if (profile.employmentStatus !== "ACTIVE") {
-      throw new StaffOpsServiceError("Only active staff can clock in.");
+      throw new StaffOpsServiceError("Chỉ nhân viên đang làm việc mới có thể vào ca.");
     }
     const openEntry = await tx.timeClockEntry.findFirst({
       where: {
@@ -200,7 +200,7 @@ export async function clockIn(context: Required<StaffContext>): Promise<CurrentC
       }
     });
     if (openEntry) {
-      throw new StaffOpsServiceError("You already have an open clock-in entry.");
+      throw new StaffOpsServiceError("Bạn đã có một phiên chấm công đang mở.");
     }
 
     const now = new Date();
@@ -223,7 +223,7 @@ export async function clockIn(context: Required<StaffContext>): Promise<CurrentC
   });
 
   return getCurrentStaffClockState(context.staffId).then((state) => {
-    if (!state) throw new StaffOpsServiceError("Unable to load current clock state.");
+    if (!state) throw new StaffOpsServiceError("Không thể tải trạng thái chấm công hiện tại.");
     return state;
   });
 }
@@ -243,7 +243,7 @@ export async function clockOut(input: ClockOutInput, context: Required<StaffCont
       orderBy: { clockInAt: "desc" }
     });
     if (!entry) {
-      throw new StaffOpsServiceError("No open clock-in entry found.");
+      throw new StaffOpsServiceError("Không tìm thấy phiên chấm công đang mở.");
     }
 
     const clockOutAt = new Date();
@@ -270,7 +270,7 @@ export async function clockOut(input: ClockOutInput, context: Required<StaffCont
   });
 
   return getCurrentStaffClockState(context.staffId).then((state) => {
-    if (!state) throw new StaffOpsServiceError("Unable to load current clock state.");
+    if (!state) throw new StaffOpsServiceError("Không thể tải trạng thái chấm công hiện tại.");
     return state;
   });
 }

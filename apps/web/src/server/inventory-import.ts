@@ -115,7 +115,7 @@ export async function createImportBatchFromUpload({
   const upload = await db.inventoryUpload.findUniqueOrThrow({ where: { id: uploadId } });
 
   if (upload.uploadType !== "IMPORT") {
-    throw new InventoryImportError("Only import uploads can be parsed into import batches.");
+    throw new InventoryImportError("Chỉ tệp nhập dữ liệu mới có thể được phân tích thành lô nhập.");
   }
 
   const sourceType = getSourceType(upload.originalFileName, upload.mimeType);
@@ -228,7 +228,7 @@ export async function updateImportRows(batchId: string, input: UpdateImportRowsI
 
   const updatedRows = input.rows.map((patch) => {
     const current = currentById.get(patch.id);
-    if (!current) throw new InventoryImportError("Import row does not belong to this batch.");
+    if (!current) throw new InventoryImportError("Dòng nhập không thuộc lô nhập này.");
     if (patch.skip) {
       return {
         id: patch.id,
@@ -323,7 +323,7 @@ export async function confirmImportBatch(
   });
 
   if (batch.status === "CONFIRMED") {
-    throw new InventoryImportError("Import batch is already confirmed.");
+    throw new InventoryImportError("Lô nhập đã được xác nhận.");
   }
 
   const allowedRowIds = input.rowIds?.length ? new Set(input.rowIds) : null;
@@ -436,14 +436,14 @@ export async function attachInvoiceUpload({
   note?: string | null;
 }) {
   if (!stockMovementId && !purchaseRecordId) {
-    throw new InventoryImportError("Invoice attachment requires a stock movement or purchase record.");
+    throw new InventoryImportError("Đính kèm hoá đơn cần có biến động kho hoặc phiếu mua hàng.");
   }
 
   const db = getDb();
   const attachment = await db.$transaction(async (tx) => {
     const upload = await tx.inventoryUpload.findUniqueOrThrow({ where: { id: uploadId } });
     if (upload.uploadType !== "INVOICE") {
-      throw new InventoryImportError("Only invoice uploads can be attached to purchase records.");
+      throw new InventoryImportError("Chỉ tệp hoá đơn mới có thể đính kèm vào phiếu mua hàng.");
     }
 
     const created = await tx.inventoryInvoiceAttachment.create({
@@ -481,12 +481,12 @@ export class InventoryImportError extends Error {
 }
 
 function validateUploadFile(file: File, uploadType: InventoryUploadType) {
-  if (!file.size) throw new InventoryImportError("Uploaded file is empty.");
-  if (file.size > MAX_UPLOAD_BYTES) throw new InventoryImportError("Uploaded file exceeds the 8 MB limit.");
+  if (!file.size) throw new InventoryImportError("Tệp tải lên đang trống.");
+  if (file.size > MAX_UPLOAD_BYTES) throw new InventoryImportError("Tệp tải lên vượt quá giới hạn 8 MB.");
 
   const sourceType = getSourceType(file.name, file.type || inferMimeType(file.name));
   if (uploadType === "IMPORT" && sourceType === "UNKNOWN") {
-    throw new InventoryImportError("Import files must be .txt, .csv, .xlsx, or .xls.");
+    throw new InventoryImportError("Tệp nhập phải có định dạng .txt, .csv, .xlsx hoặc .xls.");
   }
 }
 

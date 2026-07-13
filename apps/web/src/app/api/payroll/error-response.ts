@@ -11,7 +11,7 @@ export function toPayrollErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Payroll input is invalid.",
+          message: "Dữ liệu bảng lương không hợp lệ.",
           details: error.flatten()
         }
       },

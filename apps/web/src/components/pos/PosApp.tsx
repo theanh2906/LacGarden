@@ -58,7 +58,7 @@ const orderTypeIcons = {
 const checkoutMethods: Array<{ value: CheckoutPaymentMethod; label: string; icon: LucideIcon; disabled?: boolean; status?: string }> = [
   { value: "CASH", label: "Tiền mặt", icon: Banknote },
   { value: "CARD", label: "Thẻ", icon: CreditCard },
-  { value: "BANK_TRANSFER", label: "QR", icon: QrCode, disabled: true, status: "Coming soon" }
+  { value: "BANK_TRANSFER", label: "QR", icon: QrCode, disabled: true, status: "Sắp ra mắt" }
 ];
 
 export function PosApp({
@@ -137,7 +137,7 @@ export function PosApp({
       return;
     }
     if (action === "pay" && paymentMethod === "BANK_TRANSFER") {
-      setToast("Thanh toán QR đang Coming soon. Vui lòng dùng tiền mặt hoặc thẻ.");
+      setToast("Thanh toán QR sắp ra mắt. Vui lòng dùng tiền mặt hoặc thẻ.");
       return;
     }
 
@@ -169,7 +169,7 @@ export function PosApp({
 
       if (!response.ok) {
         const errorPayload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-        setToast(errorPayload?.error?.message ?? "Không thể ghi nhận đơn. Kiểm tra admin logs.");
+        setToast(errorPayload?.error?.message ?? "Không thể ghi nhận đơn. Kiểm tra nhật ký quản trị.");
         return;
       }
 
@@ -195,7 +195,7 @@ export function PosApp({
       await refreshOperationalData();
     } catch (error) {
       console.info("[pos-ui] Order submit failed", error);
-      setToast("Không thể ghi nhận đơn. Kiểm tra admin logs.");
+      setToast("Không thể ghi nhận đơn. Kiểm tra nhật ký quản trị.");
     } finally {
       setPendingOrderAction(null);
     }
@@ -290,11 +290,11 @@ export function PosApp({
 
   function openRestrictedView(view: PosView) {
     if (view === "Reports" && !permissions.canManageReports) {
-      setToast("Chỉ manager/owner được xem báo cáo.");
+      setToast("Chỉ quản lý/chủ quán được xem báo cáo.");
       return;
     }
     if (view === "Settings" && !permissions.canManageSettings) {
-      setToast("Chỉ manager/owner được mở cài đặt.");
+      setToast("Chỉ quản lý/chủ quán được mở cài đặt.");
       return;
     }
     setActiveView(view);
@@ -311,9 +311,9 @@ export function PosApp({
         <NavItem icon={Coffee} label="Pha chế" active={activeView === "Queue"} onClick={() => setActiveView("Queue")} />
         <NavItem icon={BarChart3} label="Báo cáo" href={permissions.canManageReports ? "/reports" : undefined} onClick={() => openRestrictedView("Reports")} disabled={!permissions.canManageReports} />
         <NavItem icon={Users} label="Nhân sự" href="/staff" />
-        <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ manager/owner được xem payroll.")} />
-        <NavItem icon={Package} label="Kho" href={permissions.canManageInventory ? "/inventory" : undefined} disabled={!permissions.canManageInventory} onClick={() => setToast("Chỉ manager/owner được quản lý kho.")} />
-        <NavItem icon={Building2} label="Dorm" href={permissions.canManageDorm ? "/dorm" : undefined} disabled={!permissions.canManageDorm} onClick={() => setToast("Chỉ manager/owner được quản lý dorm.")} />
+        <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ quản lý/chủ quán được xem bảng lương.")} />
+        <NavItem icon={Package} label="Kho" href={permissions.canManageInventory ? "/inventory" : undefined} disabled={!permissions.canManageInventory} onClick={() => setToast("Chỉ quản lý/chủ quán được quản lý kho.")} />
+        <NavItem icon={Building2} label="Ký túc xá" href={permissions.canManageDorm ? "/dorm" : undefined} disabled={!permissions.canManageDorm} onClick={() => setToast("Chỉ quản lý/chủ quán được quản lý khu lưu trú.")} />
         <NavItem icon={Settings} label="Cài đặt" active={activeView === "Settings"} onClick={() => openRestrictedView("Settings")} disabled={!permissions.canManageSettings} />
       </aside>
 
@@ -511,7 +511,7 @@ export function PosApp({
                         type="button"
                         onClick={() => {
                           if (method.disabled) {
-                            setToast("Thanh toán QR đang Coming soon. Vui lòng dùng tiền mặt hoặc thẻ.");
+                            setToast("Thanh toán QR sắp ra mắt. Vui lòng dùng tiền mặt hoặc thẻ.");
                             return;
                           }
                           setPaymentMethod(method.value);
@@ -644,7 +644,7 @@ function Workspace({
               <strong>{formatVnd(order.total)}</strong>
               {order.paymentStatus === "PAID" ? (
                 <Link className={styles.printLink} href={`/print/receipt/${order.id}`} target="_blank">
-                  <Printer size={15} /> Receipt
+                  <Printer size={15} /> Hoá đơn
                 </Link>
               ) : (
                 <span>-</span>
@@ -682,7 +682,7 @@ function Workspace({
               ))}
               <div className={styles.queueActions}>
                 <Link href={`/print/bar-ticket/${ticket.id}`} target="_blank">
-                  <Printer size={15} /> Ticket
+                  <Printer size={15} /> Phiếu pha chế
                 </Link>
                 {queueActions(ticket, pendingTicketId, updateTicketStatus)}
               </div>
@@ -698,7 +698,7 @@ function Workspace({
     if (!permissions.canManageReports) {
       return (
         <section className={styles.pagePane}>
-          <SectionHeading title="Báo cáo" description="Chỉ manager/owner được xem dữ liệu báo cáo." />
+          <SectionHeading title="Báo cáo" description="Chỉ quản lý/chủ quán được xem dữ liệu báo cáo." />
         </section>
       );
     }
@@ -741,7 +741,7 @@ function Workspace({
       <SectionHeading title="Cài đặt" description="Các cấu hình vận hành sẽ được bổ sung ở các milestone sau." />
       <div className={styles.tableCard}>
         <p className={styles.emptyText}>
-          {permissions.canManageSettings ? "Chưa có cấu hình khả dụng trong phiên bản này." : "Chỉ manager/owner được mở cài đặt."}
+          {permissions.canManageSettings ? "Chưa có cấu hình khả dụng trong phiên bản này." : "Chỉ quản lý/chủ quán được mở cài đặt."}
         </p>
       </div>
     </section>
@@ -918,13 +918,13 @@ function DetailRow({ label, value, strong = false }: { label: string; value: str
 
 function CostWarningBadge({ cost }: { cost: NonNullable<MenuVariant["cost"]> }) {
   if (cost.isLowMargin) {
-    return <small className={styles.lowMarginWarning}>Low margin {cost.grossMarginPercent}%</small>;
+    return <small className={styles.lowMarginWarning}>Biên lợi nhuận thấp {cost.grossMarginPercent}%</small>;
   }
   if (cost.recipeSource === "none") {
-    return <small className={styles.costSetupWarning}>No recipe</small>;
+    return <small className={styles.costSetupWarning}>Chưa có công thức</small>;
   }
   if (cost.missingCostIngredientCount > 0) {
-    return <small className={styles.costSetupWarning}>Missing cost</small>;
+    return <small className={styles.costSetupWarning}>Thiếu giá vốn</small>;
   }
   return null;
 }
@@ -973,11 +973,11 @@ function barItemStatusText(status: string) {
 
 function roleText(role: StaffUser["role"]) {
   const map: Record<StaffUser["role"], string> = {
-    OWNER: "Owner",
-    MANAGER: "Manager",
-    CASHIER: "Cashier",
-    BARISTA: "Barista",
-    VIEWER: "Viewer"
+    OWNER: "Chủ quán",
+    MANAGER: "Quản lý",
+    CASHIER: "Thu ngân",
+    BARISTA: "Pha chế",
+    VIEWER: "Chỉ xem"
   };
   return map[role];
 }
