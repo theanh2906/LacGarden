@@ -14,7 +14,7 @@ The POS, inventory, order queue, reports, and Dorm module read and write real da
 
 ## Dorm module
 
-Open `/dorm` as an owner or manager to manage dorm sites, rooms/beds, tenants, leases, monthly invoices, and rent payments. The tracked Prisma migration is applied by the Vercel build before deployment.
+Open `/dorm` as an owner or manager to manage dorm sites, rooms/beds, tenants, leases, monthly invoices, and rent payments. The Vercel build synchronizes the additive Prisma schema before deployment.
 
 ## Local Development
 
