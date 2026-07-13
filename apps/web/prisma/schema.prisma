@@ -236,6 +236,52 @@ enum PayrollAdjustmentType {
   @@map("payroll_adjustment_type")
 }
 
+enum DormRoomStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+
+  @@map("dorm_room_status")
+}
+
+enum DormBedStatus {
+  VACANT
+  OCCUPIED
+  MAINTENANCE
+  RESERVED
+
+  @@map("dorm_bed_status")
+}
+
+enum DormLeaseStatus {
+  ACTIVE
+  NOTICE_GIVEN
+  ENDED
+  CANCELLED
+
+  @@map("dorm_lease_status")
+}
+
+enum DormInvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIAL
+  PAID
+  VOIDED
+
+  @@map("dorm_invoice_status")
+}
+
+enum DormPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  QR
+  CARD
+  OTHER
+
+  @@map("dorm_payment_method")
+}
+
 model User {
   id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username    String    @unique
@@ -255,8 +301,165 @@ model User {
   inventoryUploads        InventoryUpload[]
   inventoryImportBatches  InventoryImportBatch[]
   employeeProfile         EmployeeProfile?
+  createdDormLeases       DormLease[]             @relation("DormLeaseCreatedBy")
+  receivedDormPayments    DormPayment[]           @relation("DormPaymentReceivedBy")
 
   @@map("users")
+}
+
+model DormSite {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name      String   @unique(map: "dorm_sites_name_uidx")
+  address   String?
+  note      String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  rooms DormRoom[]
+
+  @@index([isActive, name], map: "dorm_sites_isActive_name_idx")
+  @@map("dorm_sites")
+}
+
+model DormRoom {
+  id        String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  siteId    String         @map("site_id") @db.Uuid
+  code      String
+  name      String
+  status    DormRoomStatus @default(ACTIVE)
+  note      String?
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  site DormSite  @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  beds DormBed[]
+
+  @@unique([siteId, code], map: "dorm_rooms_siteId_code_uidx")
+  @@index([siteId, status], map: "dorm_rooms_siteId_status_idx")
+  @@map("dorm_rooms")
+}
+
+model DormBed {
+  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  roomId          String        @map("room_id") @db.Uuid
+  code            String
+  status          DormBedStatus @default(VACANT)
+  monthlyRentVnd  BigInt        @default(0) @map("monthly_rent_vnd")
+  note            String?
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  room   DormRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  leases DormLease[]
+
+  @@unique([roomId, code], map: "dorm_beds_roomId_code_uidx")
+  @@index([roomId, status], map: "dorm_beds_roomId_status_idx")
+  @@map("dorm_beds")
+}
+
+model DormTenant {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  fullName         String   @map("full_name")
+  phone            String
+  email            String?
+  identityNumber   String?  @map("identity_number")
+  emergencyContact String?  @map("emergency_contact")
+  note             String?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  leases DormLease[]
+
+  @@index([fullName], map: "dorm_tenants_fullName_idx")
+  @@index([phone], map: "dorm_tenants_phone_idx")
+  @@map("dorm_tenants")
+}
+
+model DormLease {
+  id             String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  bedId          String          @map("bed_id") @db.Uuid
+  startDate      DateTime        @map("start_date") @db.Date
+  endDate        DateTime?       @map("end_date") @db.Date
+  dueDay         Int             @default(5) @map("due_day")
+  monthlyRentVnd BigInt          @map("monthly_rent_vnd")
+  depositVnd     BigInt          @default(0) @map("deposit_vnd")
+  status         DormLeaseStatus @default(ACTIVE)
+  note           String?
+  createdById    String?         @map("created_by_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant    DormTenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  bed       DormBed       @relation(fields: [bedId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdBy User?         @relation("DormLeaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  invoices  DormInvoice[]
+
+  @@index([tenantId, status], map: "dorm_leases_tenantId_status_idx")
+  @@index([bedId, status], map: "dorm_leases_bedId_status_idx")
+  @@index([status, startDate], map: "dorm_leases_status_startDate_idx")
+  @@map("dorm_leases")
+}
+
+model DormInvoice {
+  id           String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  leaseId      String            @map("lease_id") @db.Uuid
+  invoiceNo    String            @unique(map: "dorm_invoices_invoiceNo_uidx") @map("invoice_no")
+  billingMonth DateTime          @map("billing_month") @db.Date
+  dueDate      DateTime          @map("due_date") @db.Date
+  subtotalVnd  BigInt            @default(0) @map("subtotal_vnd")
+  totalVnd     BigInt            @default(0) @map("total_vnd")
+  paidVnd      BigInt            @default(0) @map("paid_vnd")
+  status       DormInvoiceStatus @default(DRAFT)
+  note         String?
+  issuedAt     DateTime?         @map("issued_at") @db.Timestamptz(6)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  lease    DormLease         @relation(fields: [leaseId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  items    DormInvoiceItem[]
+  payments DormPayment[]
+
+  @@unique([leaseId, billingMonth], map: "dorm_invoices_leaseId_billingMonth_uidx")
+  @@index([status, dueDate], map: "dorm_invoices_status_dueDate_idx")
+  @@index([billingMonth], map: "dorm_invoices_billingMonth_idx")
+  @@map("dorm_invoices")
+}
+
+model DormInvoiceItem {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  description String
+  quantity    Int      @default(1)
+  unitAmount  BigInt   @map("unit_amount")
+  lineTotal   BigInt   @map("line_total")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice DormInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([invoiceId, sortOrder], map: "dorm_invoice_items_invoiceId_sortOrder_idx")
+  @@map("dorm_invoice_items")
+}
+
+model DormPayment {
+  id           String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  invoiceId    String            @map("invoice_id") @db.Uuid
+  amountVnd    BigInt            @map("amount_vnd")
+  method       DormPaymentMethod
+  reference    String?
+  receivedAt   DateTime          @default(now()) @map("received_at") @db.Timestamptz(6)
+  receivedById String?           @map("received_by_id") @db.Uuid
+  note         String?
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice    DormInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  receivedBy User?       @relation("DormPaymentReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([invoiceId, receivedAt], map: "dorm_payments_invoiceId_receivedAt_idx")
+  @@index([receivedAt], map: "dorm_payments_receivedAt_idx")
+  @@map("dorm_payments")
 }
 
 model EmployeeProfile {

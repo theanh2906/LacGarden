@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @coffee-pos/web build",
+  "buildCommand": "pnpm db:push && pnpm --filter @coffee-pos/web build",
   "outputDirectory": "apps/web/.next"
 }

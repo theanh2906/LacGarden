@@ -10,7 +10,11 @@ Fullstack Next.js coffee shop POS for Lac Garden, backed by PostgreSQL through P
 - `src/server`: lazy Prisma-backed business services for POS and inventory.
 - `apps/web/prisma/schema.prisma`: PostgreSQL schema mapped to the live SQL Connect / Cloud SQL database.
 
-The POS, inventory, order queue, and reports read and write real database data.
+The POS, inventory, order queue, reports, and Dorm module read and write real database data.
+
+## Dorm module
+
+Open `/dorm` as an owner or manager to manage dorm sites, rooms/beds, tenants, leases, monthly invoices, and rent payments. The Vercel build synchronizes the additive Prisma schema before deployment.
 
 ## Local Development
 

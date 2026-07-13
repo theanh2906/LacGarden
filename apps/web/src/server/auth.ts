@@ -28,8 +28,8 @@ type SessionCookiePayload = {
 type StaffLookup = Pick<User, "id" | "username" | "displayName" | "role" | "isActive">;
 
 const permissionByRole: Record<UserRole, StaffPermission[]> = {
-  OWNER: ["pos:access", "orders:manage", "payments:collect", "bar:manage", "reports:view", "inventory:manage", "settings:manage", "payroll:manage"],
-  MANAGER: ["pos:access", "orders:manage", "payments:collect", "bar:manage", "reports:view", "inventory:manage", "settings:manage", "payroll:manage"],
+  OWNER: ["pos:access", "orders:manage", "payments:collect", "bar:manage", "reports:view", "inventory:manage", "settings:manage", "payroll:manage", "dorm:manage"],
+  MANAGER: ["pos:access", "orders:manage", "payments:collect", "bar:manage", "reports:view", "inventory:manage", "settings:manage", "payroll:manage", "dorm:manage"],
   CASHIER: ["pos:access", "orders:manage", "payments:collect", "bar:manage"],
   BARISTA: ["pos:access", "bar:manage"],
   VIEWER: ["pos:access"]
@@ -167,7 +167,8 @@ export function getStaffClientPermissions(role: UserRole): StaffClientPermission
     canManageReports: hasStaffPermission(role, "reports:view"),
     canManageInventory: hasStaffPermission(role, "inventory:manage"),
     canManageSettings: hasStaffPermission(role, "settings:manage"),
-    canManagePayroll: hasStaffPermission(role, "payroll:manage")
+    canManagePayroll: hasStaffPermission(role, "payroll:manage"),
+    canManageDorm: hasStaffPermission(role, "dorm:manage")
   };
 }
 
