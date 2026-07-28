@@ -6,6 +6,7 @@ import {
   Bell,
   Bike,
   Banknote,
+  BookOpen,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -308,6 +309,7 @@ export function PosApp({
         <NavItem icon={ReceiptText} label="POS" active={activeView === "POS"} onClick={() => setActiveView("POS")} />
         <NavItem icon={ClipboardList} label="Đơn hàng" active={activeView === "Orders"} onClick={() => setActiveView("Orders")} />
         <NavItem icon={Coffee} label="Pha chế" active={activeView === "Queue"} onClick={() => setActiveView("Queue")} />
+        <NavItem icon={BookOpen} label="Công thức" href="/recipes" />
         <NavItem icon={BarChart3} label="Báo cáo" href={permissions.canManageReports ? "/reports" : undefined} onClick={() => openRestrictedView("Reports")} disabled={!permissions.canManageReports} />
         <NavItem icon={Users} label="Nhân sự" href="/staff" />
         <NavItem icon={WalletCards} label="Lương" href={permissions.canManagePayroll ? "/payroll" : undefined} disabled={!permissions.canManagePayroll} onClick={() => setToast("Chỉ quản lý/chủ quán được xem bảng lương.")} />

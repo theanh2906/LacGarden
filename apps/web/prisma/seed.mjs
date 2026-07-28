@@ -107,6 +107,43 @@ const inventoryItems = [
   inventory("DUONG_CAT_BIEN_HOA_PURE", "Đường cát Biên Hòa Pure", "g", 168500, 5000, 33.7, "Combo 5 Đường Túi Biên Hòa Pure 1kg/túi - 168.500đ/combo, nguồn: agrismart.com.vn/ảnh người dùng.")
 ];
 
+const starterRecipes = [
+  ["sua-chua-nha-dam-hat-sen", "Shaker: 1 HSC + 40ml sữa tươi + 20ml sữa đặc + 10ml siro vải + 20ml KBPC + 1 tắc + đá. Hoàn thiện: topping hạt sen và thạch nha đam.", [["HU_SUA_CHUA", 1, "hũ"], ["SUA_TUOI", 40, "ml"], ["SUA_DAC", 20, "ml"], ["SIRO_VAI", 10, "ml"], ["KBPC", 20, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["HAT_SEN", 20, "g"], ["THACH_NHA_DAM", 70, "g"]]],
+  ["sua-chua-dao", "Shaker: 1 HSC + 40ml sữa tươi + 15ml siro đào + 15ml sữa đặc + 20ml KBPC + 1 tắc + đá. Hoàn thiện: mứt decor và thạch củ năng.", [["HU_SUA_CHUA", 1, "hũ"], ["SUA_TUOI", 40, "ml"], ["SIRO_DAO", 15, "ml"], ["SUA_DAC", 15, "ml"], ["KBPC", 20, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["MUT_DECOR_DAO", 15, "ml"], ["THACH_CU_NANG", 60, "g"]]],
+  ["sua-chua-dau", "Shaker: 1 HSC + 40ml sữa tươi + 15ml siro dâu + 15ml sữa đặc + 20ml KBPC + 1 tắc + đá. Hoàn thiện: mứt decor và thạch củ năng.", [["HU_SUA_CHUA", 1, "hũ"], ["SUA_TUOI", 40, "ml"], ["SIRO_DAU", 15, "ml"], ["SUA_DAC", 15, "ml"], ["KBPC", 20, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["MUT_DECOR_DAU", 15, "ml"], ["THACH_CU_NANG", 60, "g"]]],
+  ["sua-chua-xoai", "Shaker: 1 HSC + 40ml sữa tươi + 15ml siro xoài + 15ml sữa đặc + 20ml KBPC + 1 tắc + đá. Hoàn thiện: mứt decor và thạch củ năng.", [["HU_SUA_CHUA", 1, "hũ"], ["SUA_TUOI", 40, "ml"], ["SIRO_XOAI", 15, "ml"], ["SUA_DAC", 15, "ml"], ["KBPC", 20, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["MUT_DECOR_XOAI", 15, "ml"], ["THACH_CU_NANG", 60, "g"]]],
+  ["sua-chua-viet-quat-bac-ha", "Shaker: 1 HSC + 40ml sữa tươi + 15ml siro bạc hà + 15ml sữa đặc + 20ml KBPC + 1 tắc + đá. Hoàn thiện: mứt việt quất và thạch củ năng.", [["HU_SUA_CHUA", 1, "hũ"], ["SUA_TUOI", 40, "ml"], ["SIRO_BAC_HA", 15, "ml"], ["SUA_DAC", 15, "ml"], ["KBPC", 20, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["MUT_DECOR_VIET_QUAT", 15, "ml"], ["THACH_CU_NANG", 60, "g"]]],
+  ["matcha-latte", "Rây 4g matcha, đánh tan với 40ml nước ấm. Ly: 80ml sữa tươi + 40ml Meiji + 10ml KBPC + 10ml nước đường + đá. Rót matcha lên, phủ macchiato.", [["BOT_MATCHA", 4, "g"], ["SUA_TUOI", 80, "ml"], ["MEIJI", 40, "ml"], ["KBPC", 10, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"], ["MACCHIATO", 45, "ml"]]],
+  ["matcha-cold-whisk", "Rây 4g matcha, đánh với 40ml Meiji lạnh + 10ml KBPC lạnh khoảng 1 phút. Ly: 100ml sữa tươi + 10ml nước đường + đá, rót foam lên.", [["BOT_MATCHA", 4, "g"], ["MEIJI", 40, "ml"], ["KBPC", 10, "ml"], ["SUA_TUOI", 100, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"]]],
+  ["matcha-sua-yen-mach", "Rây 4g matcha, đánh tan với 50ml nước ấm. Ly: 120ml sữa Oatside + 10ml nước đường + đá. Rót matcha lên, phủ macchiato.", [["BOT_MATCHA", 4, "g"], ["SUA_OATSIDE", 120, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"], ["MACCHIATO", 45, "ml"]]],
+  ["ca-phe-den", "60ml cốt cà phê + 0-10ml nước đường + đá. Khuấy cà phê với đường nếu khách uống ngọt, thêm đá.", [["COT_CA_PHE", 60, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"]]],
+  ["ca-phe-sua", "60ml cốt cà phê + 25ml sữa đặc + đá. Khuấy tan sữa đặc với cà phê, thêm đá.", [["COT_CA_PHE", 60, "ml"], ["SUA_DAC", 25, "ml"], ["DA", 180, "g"]]],
+  ["americano", "60ml cốt cà phê + 100-120ml nước lọc + đá. Cho nước vào ly trước, rót cà phê lên, thêm đá.", [["COT_CA_PHE", 60, "ml"], ["DA", 180, "g"]]],
+  ["ca-phe-kem-muoi", "60ml cốt cà phê + 20ml sữa đặc + đá + 40-50ml macchiato. Khuấy nền cà phê trước, phủ kem muối sau cùng.", [["COT_CA_PHE", 60, "ml"], ["SUA_DAC", 20, "ml"], ["DA", 180, "g"], ["MACCHIATO", 45, "ml"]]],
+  ["ca-phe-kem-trung", "60ml cốt cà phê + 20ml sữa đặc + đá + kem trứng. Đánh kem trứng bông mềm, phủ sau cùng.", [["COT_CA_PHE", 60, "ml"], ["SUA_DAC", 20, "ml"], ["DA", 180, "g"], ["KBPC", 10, "ml"], ["WHIPPING_CREAM", 20, "ml"], ["SUA_TUOI", 10, "ml"], ["BOT_TRUNG_VANG", 3, "g"]]],
+  ["bac-xiu", "25ml sữa đặc + 100-120ml sữa tươi + 25-30ml cốt cà phê + đá. Cho sữa vào ly trước, thêm đá, rót cà phê lên mặt.", [["SUA_DAC", 25, "ml"], ["SUA_TUOI", 110, "ml"], ["COT_CA_PHE", 30, "ml"], ["DA", 180, "g"]]],
+  ["ca-phe-sua-tuoi-hanh-nhan", "15ml syrup hạnh nhân + 100ml sữa tươi + 10ml sữa đặc/nước đường + 40ml cốt cà phê + đá. Rót cà phê lên trên.", [["SIRO_HANH_NHAN", 15, "ml"], ["SUA_TUOI", 100, "ml"], ["SUA_DAC", 10, "ml"], ["COT_CA_PHE", 40, "ml"], ["DA", 180, "g"]]],
+  ["tra-dao-atiso", "120ml trà đen + syrup đào + atiso/hibiscus + nước đường + tắc + đá. Lắc đều trong shaker, decor đào miếng.", [["TRA_DEN_U", 120, "ml"], ["SIRO_DAO", 15, "ml"], ["SIRO_ATISO_HIBISCUS", 10, "ml"], ["NUOC_DUONG", 10, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["DAO_MIENG", 30, "g"]]],
+  ["tra-dau-oi-hong", "120ml trà đen + syrup dâu + syrup ổi hồng + nước đường + tắc + đá. Lắc đều, decor trái cây nếu có.", [["TRA_DEN_U", 120, "ml"], ["SIRO_DAU", 10, "ml"], ["SIRO_OI_HONG", 15, "ml"], ["NUOC_DUONG", 10, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"]]],
+  ["tra-nhan-que-hoa", "120ml trà đen/trà nhài + syrup nhãn + syrup quế hoa + nước đường + tắc + đá. Lắc đều, decor nhãn.", [["TRA_DEN_U", 120, "ml"], ["SIRO_NHAN", 15, "ml"], ["SIRO_QUE_HOA", 10, "ml"], ["NUOC_DUONG", 10, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["NHAN", 30, "g"]]],
+  ["tra-oi-hoa-hong", "120ml trà đen + syrup ổi hồng + syrup hoa hồng + nước đường + tắc + đá. Lắc đều, decor lát ổi/hoa khô nếu có.", [["TRA_DEN_U", 120, "ml"], ["SIRO_OI_HONG", 15, "ml"], ["SIRO_HOA_HONG", 10, "ml"], ["NUOC_DUONG", 10, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"]]],
+  ["tra-vai-hoa-nhai", "120ml trà nhài + syrup vải + hương/syrup hoa nhài + nước đường + tắc + đá. Lắc đều, decor vải.", [["TRA_NHAI_U", 120, "ml"], ["SIRO_VAI", 15, "ml"], ["SIRO_HOA_NHAI", 10, "ml"], ["NUOC_DUONG", 10, "ml"], ["TAC", 1, "quả"], ["DA", 180, "g"], ["VAI", 30, "g"]]],
+  ["soda-dao", "15ml syrup đào + 15ml mứt decor + 15ml nước đường + đá 2/3 ly + soda châm đầy. Khuấy nhẹ.", [["SIRO_DAO", 15, "ml"], ["MUT_DECOR_DAO", 15, "ml"], ["NUOC_DUONG", 15, "ml"], ["DA", 180, "g"], ["SODA", 180, "ml"]]],
+  ["soda-dau", "15ml syrup dâu + 15ml mứt decor + 15ml nước đường + đá 2/3 ly + soda châm đầy. Không lắc sau khi cho soda.", [["SIRO_DAU", 15, "ml"], ["MUT_DECOR_DAU", 15, "ml"], ["NUOC_DUONG", 15, "ml"], ["DA", 180, "g"], ["SODA", 180, "ml"]]],
+  ["soda-xoai", "15ml syrup xoài + 15ml mứt decor + 15ml nước đường + đá 2/3 ly + soda châm đầy. Decor trái cây đúng vị nếu có.", [["SIRO_XOAI", 15, "ml"], ["MUT_DECOR_XOAI", 15, "ml"], ["NUOC_DUONG", 15, "ml"], ["DA", 180, "g"], ["SODA", 180, "ml"]]],
+  ["soda-viet-quat", "15ml syrup việt quất + 15ml mứt decor + 15ml nước đường + đá 2/3 ly + soda châm đầy. Khuấy nhẹ từ dưới lên.", [["SIRO_VIET_QUAT", 15, "ml"], ["MUT_DECOR_VIET_QUAT", 15, "ml"], ["NUOC_DUONG", 15, "ml"], ["DA", 180, "g"], ["SODA", 180, "ml"]]],
+  ["cacao-nong-da", "12-15g bột cacao + 30ml nước nóng + 20ml sữa đặc + 120ml sữa tươi + đá nếu uống lạnh. Đánh tan cacao trước.", [["BOT_CACAO", 15, "g"], ["SUA_DAC", 20, "ml"], ["SUA_TUOI", 120, "ml"], ["DA", 160, "g"]]],
+  ["cacao-latte-kem-trung", "12-15g cacao + 30ml nước nóng + 20ml sữa đặc + 120ml sữa tươi + đá + kem trứng. Phủ kem trứng lên mặt.", [["BOT_CACAO", 15, "g"], ["SUA_DAC", 20, "ml"], ["SUA_TUOI", 120, "ml"], ["DA", 160, "g"], ["KBPC", 10, "ml"], ["WHIPPING_CREAM", 20, "ml"], ["BOT_TRUNG_VANG", 3, "g"]]],
+  ["cacao-bac-ha", "12-15g cacao + 30ml nước nóng + 20ml sữa đặc + 120ml sữa tươi + 10ml syrup bạc hà + đá. Dùng bạc hà vừa phải.", [["BOT_CACAO", 15, "g"], ["SUA_DAC", 20, "ml"], ["SUA_TUOI", 120, "ml"], ["SIRO_BAC_HA", 10, "ml"], ["DA", 160, "g"]]],
+  ["tra-sua-oolong-tran-chau", "120ml cốt trà oolong + 60ml sữa tươi + 20ml sữa đặc + 20ml KBPC + 10ml nước đường + đá. Cho 40g trân châu vào đáy ly.", [["COT_TRA_OOLONG", 120, "ml"], ["SUA_TUOI", 60, "ml"], ["SUA_DAC", 20, "ml"], ["KBPC", 20, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"], ["TRAN_CHAU", 40, "g"]]],
+  ["tra-sua-oolong-kem-trung", "120ml cốt trà oolong + 60ml sữa tươi + 20ml sữa đặc + 20ml KBPC + 10ml nước đường + đá. Phủ kem trứng lên mặt.", [["COT_TRA_OOLONG", 120, "ml"], ["SUA_TUOI", 60, "ml"], ["SUA_DAC", 20, "ml"], ["KBPC", 20, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"], ["BOT_TRUNG_VANG", 3, "g"]]],
+  ["tra-sua-gao-rang-hat-sen", "120ml cốt trà gạo rang + 60ml sữa tươi + 20ml sữa đặc + 20ml KBPC + 10ml nước đường + đá. Cho hạt sen vào ly.", [["COT_TRA_GAO_RANG", 120, "ml"], ["SUA_TUOI", 60, "ml"], ["SUA_DAC", 20, "ml"], ["KBPC", 20, "ml"], ["NUOC_DUONG", 10, "ml"], ["DA", 180, "g"], ["HAT_SEN", 20, "g"]]],
+  ["pate-cha-bong-pho-mai", "Nhân chính: pate + chà bông + phô mai. Cần chốt lại định lượng gram thực tế sau khi test vận hành.", [["BANH_MI", 1, "ổ"], ["PATE", 25, "g"], ["CHA_BONG", 12, "g"], ["PHO_MAI_LAT", 1, "lát"], ["TUI_GIAY_BANH_MI", 1, "cái"]]],
+  ["xuc-xich-pho-mai", "Nhân chính: xúc xích + phô mai. Cần chốt lại định lượng thực tế sau khi test vận hành.", [["BANH_MI", 1, "ổ"], ["XUC_XICH", 1, "cây"], ["PHO_MAI_LAT", 1, "lát"], ["SOT_MAYO", 10, "g"], ["TUI_GIAY_BANH_MI", 1, "cái"]]],
+  ["ga-cay-ngot-pho-mai", "Nhân chính: gà cay ngọt + phô mai. Cần chốt lại định lượng gram thực tế sau khi test vận hành.", [["BANH_MI", 1, "ổ"], ["GA_CAY_NGOT", 45, "g"], ["PHO_MAI_LAT", 1, "lát"], ["SOT_MAYO", 10, "g"], ["TUI_GIAY_BANH_MI", 1, "cái"]]],
+  ["bo-pho-mai", "Nhân chính: nhân bò + phô mai. Cần chốt lại định lượng gram thực tế sau khi test vận hành.", [["BANH_MI", 1, "ổ"], ["NHAN_BO", 45, "g"], ["PHO_MAI_LAT", 1, "lát"], ["SOT_TIEU_DEN_BBQ", 10, "g"], ["TUI_GIAY_BANH_MI", 1, "cái"]]]
+];
+
 async function main() {
   if (RESET_SEED_DATA) {
     await resetSeedData();
@@ -224,6 +261,8 @@ async function main() {
       }
     });
   }
+
+  await seedProductRecipes();
 }
 
 main()
@@ -239,6 +278,9 @@ main()
 async function resetSeedData() {
   await prisma.$transaction(
     async (tx) => {
+      await tx.productCostSnapshot.deleteMany();
+      await tx.productRecipeIngredient.deleteMany();
+      await tx.productRecipe.deleteMany();
       await tx.payment.deleteMany();
       await tx.orderItem.deleteMany();
       await tx.order.deleteMany();
@@ -267,6 +309,68 @@ function getMenuCategories() {
       seen.add(category.slug);
       return true;
     });
+}
+
+async function seedProductRecipes() {
+  const [menuRows, inventoryRows] = await Promise.all([
+    prisma.menuItem.findMany({
+      select: {
+        id: true,
+        slug: true
+      }
+    }),
+    prisma.inventoryItem.findMany({
+      select: {
+        id: true,
+        code: true
+      }
+    })
+  ]);
+  const menuItemBySlug = new Map(menuRows.map((item) => [item.slug, item]));
+  const inventoryItemByCode = new Map(inventoryRows.map((item) => [item.code, item]));
+
+  for (const [menuItemSlug, note, ingredients] of starterRecipes) {
+    const menuItem = menuItemBySlug.get(menuItemSlug);
+    if (!menuItem) continue;
+
+    const targetKey = `MENU_ITEM:${menuItem.id}`;
+    const existingRecipe = await prisma.productRecipe.findUnique({
+      where: { targetKey },
+      select: { id: true }
+    });
+    if (existingRecipe) continue;
+
+    const savedRecipe = await prisma.productRecipe.create({
+      data: {
+        targetType: "MENU_ITEM",
+        targetKey,
+        menuItemId: menuItem.id,
+        packagingCostVnd: BigInt(0),
+        note
+      }
+    });
+
+    const ingredientRows = ingredients
+      .map(([code, quantity, unit], index) => {
+        const inventoryItem = inventoryItemByCode.get(code);
+        if (!inventoryItem) return null;
+        return {
+          recipeId: savedRecipe.id,
+          inventoryItemId: inventoryItem.id,
+          quantity: quantity.toString(),
+          unit,
+          wastePercent: "0",
+          sortOrder: index
+        };
+      })
+      .filter(Boolean);
+
+    if (ingredientRows.length) {
+      await prisma.productRecipeIngredient.createMany({
+        data: ingredientRows
+      });
+    }
+  }
 }
 
 function menuItem(categoryName, slug, name, price) {

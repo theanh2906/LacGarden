@@ -43,6 +43,7 @@ export type ProductCostTargetDto = {
   targetId: string;
   menuItemId: string;
   variantId: string | null;
+  categoryName: string;
   label: string;
   salePriceVnd: number;
   cost: ProductCostDto;

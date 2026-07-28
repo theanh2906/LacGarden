@@ -27,7 +27,11 @@ export function LoginForm() {
       });
 
       if (!response.ok) {
-        setError("Sai username hoặc PIN.");
+        if (response.status === 401) {
+          setError("Sai username hoặc PIN.");
+        } else {
+          console.info("[auth-ui] Login request failed", { status: response.status });
+        }
         return;
       }
 

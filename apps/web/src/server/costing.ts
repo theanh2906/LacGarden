@@ -19,6 +19,7 @@ type ProductTarget = {
   targetId: string;
   menuItemId: string;
   variantId: string | null;
+  categoryName: string;
   label: string;
   salePriceVnd: number;
 };
@@ -71,6 +72,7 @@ export async function getProductCostingAdminSnapshot(): Promise<ProductCostingAd
         category: { isActive: true }
       },
       include: {
+        category: true,
         variants: {
           where: { isActive: true },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
@@ -96,6 +98,7 @@ export async function getProductCostingAdminSnapshot(): Promise<ProductCostingAd
       targetId: item.id,
       menuItemId: item.id,
       variantId: null,
+      categoryName: item.category.name,
       label: `${item.name} · Base`,
       salePriceVnd: toNumber(item.basePrice)
     },
@@ -104,6 +107,7 @@ export async function getProductCostingAdminSnapshot(): Promise<ProductCostingAd
       targetId: variant.id,
       menuItemId: item.id,
       variantId: variant.id,
+      categoryName: item.category.name,
       label: `${item.name} · ${variant.name}`,
       salePriceVnd: toNumber(variant.price)
     }))
@@ -251,6 +255,7 @@ export async function getMenuVariantCostSummaries(
       targetId: variant.id,
       menuItemId: variant.itemId,
       variantId: variant.id,
+      categoryName: "",
       label: "",
       salePriceVnd: toNumber(variant.price)
     };
@@ -304,6 +309,7 @@ export async function createOrderItemCostSnapshotsInTransaction(tx: Prisma.Trans
       targetId: orderItem.variantId ?? (orderItem.menuItemId as string),
       menuItemId: orderItem.menuItemId as string,
       variantId: orderItem.variantId,
+      categoryName: "",
       label: "",
       salePriceVnd: toNumber(orderItem.unitPriceSnapshot)
     };
@@ -351,6 +357,7 @@ async function resolveTargetInTransaction(
       targetId,
       menuItemId: item.id,
       variantId: null,
+      categoryName: "",
       label: item.name,
       salePriceVnd: toNumber(item.basePrice)
     };
@@ -367,6 +374,7 @@ async function resolveTargetInTransaction(
     targetId,
     menuItemId: variant.itemId,
     variantId: variant.id,
+    categoryName: "",
     label: `${variant.item.name} · ${variant.name}`,
     salePriceVnd: toNumber(variant.price)
   };
@@ -393,7 +401,7 @@ function mapCostTarget(
 
   return {
     ...target,
-    cost,
+    cost: toProductCostDto(cost),
     recipe: ownRecipe ? mapRecipe(ownRecipe, latestUnitCostByItemId) : null
   };
 }
@@ -462,6 +470,21 @@ function emptyCost(salePriceVnd: number, lowMarginThresholdPercent: number): Cos
     lowMarginThresholdPercent,
     isLowMargin: false,
     missingCostIngredientCount: 0
+  };
+}
+
+function toProductCostDto(cost: CostCalculation): ProductCostDto {
+  return {
+    recipeId: cost.recipeId,
+    recipeSource: cost.recipeSource,
+    ingredientCostVnd: cost.ingredientCostVnd,
+    packagingCostVnd: cost.packagingCostVnd,
+    totalCostVnd: cost.totalCostVnd,
+    grossMarginVnd: cost.grossMarginVnd,
+    grossMarginPercent: cost.grossMarginPercent,
+    lowMarginThresholdPercent: cost.lowMarginThresholdPercent,
+    isLowMargin: cost.isLowMargin,
+    missingCostIngredientCount: cost.missingCostIngredientCount
   };
 }
 
